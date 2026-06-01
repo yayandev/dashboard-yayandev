@@ -7,7 +7,7 @@ import MobileSidebar from "@/components/dashboard/MobileSidebar";
 import Topbar from "@/components/dashboard/Topbar";
 import ProjectTable from "@/components/dashboard/ProjectTable";
 
-export default function DashboardPage() {
+export default function ProjectPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -27,7 +27,7 @@ export default function DashboardPage() {
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-6">
             <div>
               <h1 className="text-[32px] leading-tight font-semibold tracking-[-0.01em]">
-                Dashboard
+                Project Roster
               </h1>
 
               <p className="text-sm text-[#4c4546] mt-1">
@@ -35,6 +35,8 @@ export default function DashboardPage() {
               </p>
             </div>
           </div>
+
+          <ProjectTable />
         </div>
       </div>
     </main>

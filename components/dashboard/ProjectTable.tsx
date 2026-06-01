@@ -9,27 +9,25 @@ export default function ProjectTable() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const res = await fetch(
-          "https://api-yayandev.vercel.app/api/portfolio"
-        );
+  const fetchProjects = async () => {
+    try {
+      const res = await fetch("https://api-yayandev.vercel.app/api/portfolio");
 
-        if (!res.ok) {
-          throw new Error("Failed to fetch portfolio");
-        }
-
-        const data = await res.json();
-
-        setProjects(data?.data || []);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+      if (!res.ok) {
+        throw new Error("Failed to fetch portfolio");
       }
-    };
 
+      const data = await res.json();
+
+      setProjects(data?.data || []);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchProjects();
   }, []);
 
@@ -72,7 +70,11 @@ export default function ProjectTable() {
           <tbody>
             {projects.length > 0 ? (
               projects.map((project: any) => (
-                <ProjectRow key={project.id} project={project} />
+                <ProjectRow
+                  key={project.id}
+                  project={project}
+                  refetch={fetchProjects}
+                />
               ))
             ) : (
               <tr>

@@ -8,15 +8,16 @@ import {
   FiBarChart2,
   FiSettings,
   FiHelpCircle,
-  FiLogOut,
 } from "react-icons/fi";
 import LogoutButton from "../LogoutButton";
-
+import { usePathname } from "next/navigation";
 interface Props {
   mobile?: boolean;
 }
 
 export default function Sidebar({ mobile = false }: Props) {
+  const pathname = usePathname();
+
   return (
     <aside
       className={`
@@ -47,9 +48,19 @@ export default function Sidebar({ mobile = false }: Props) {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 space-y-1">
-        <NavItem icon={<FiGrid />} label="Dashboard" />
+        <NavItem
+          active={pathname === "/"}
+          icon={<FiGrid />}
+          label="Dashboard"
+          href="/"
+        />
 
-        <NavItem active icon={<FiFolder />} label="Projects" />
+        <NavItem
+          active={pathname === "/project" || pathname?.startsWith("/project/")}
+          icon={<FiFolder />}
+          label="Projects"
+          href="/project"
+        />
 
         <NavItem icon={<FiBarChart2 />} label="Analytics" />
 
@@ -70,14 +81,16 @@ function NavItem({
   icon,
   label,
   active,
+  href,
 }: {
   icon: React.ReactNode;
   label: string;
   active?: boolean;
+  href?: string;
 }) {
   return (
     <Link
-      href="#"
+      href={href || "#"}
       className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 ${
         active
           ? "bg-[#e2e2e2]/60 text-black border-r-4 border-black font-semibold"
