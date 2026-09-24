@@ -1,21 +1,23 @@
 "use client";
 
-import Link from "next/link";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { FiChevronRight } from "react-icons/fi";
 import FormProject from "@/components/FormProject";
 import PageHeader from "@/components/ui/PageHeader";
+import { useProjects } from "@/hooks/useProjects";
 import { createProject, type ProjectInput } from "@/lib/projects";
 import { getErrorMessage } from "@/lib/api";
 
 export default function CreateProjectPage() {
   const router = useRouter();
+  const { projects } = useProjects();
+  const techSuggestions = useMemo(() => [...new Set(projects.flatMap((p) => p.tech_stack))].sort(), [projects]);
 
   const handleSubmit = async (values: ProjectInput) => {
     try {
       await createProject(values);
-      toast.success("Project berhasil dibuat!");
+      toast.success(`"${values.title.trim()}" ditambahkan`);
       router.push("/project");
     } catch (err) {
       toast.error(getErrorMessage(err, "Gagal membuat project"));
@@ -24,18 +26,12 @@ export default function CreateProjectPage() {
 
   return (
     <>
-      <nav className="flex items-center gap-1 text-sm text-muted mb-3" aria-label="Breadcrumb">
-        <Link href="/project" className="hover:text-foreground">
-          Projects
-        </Link>
-        <FiChevronRight />
-        <span className="text-foreground">Tambah</span>
-      </nav>
       <PageHeader
-        title="Tambah Project Baru"
-        description="Isi detail di bawah untuk menambahkan project ke portfolio kamu."
+        trail={[{ href: "/project", label: "Projects" }]}
+        title="Project baru"
+        description="Tambahkan project ke portfolio."
       />
-      <FormProject formType="create" onSubmit={handleSubmit} />
+      <FormProject formType="create" onSubmit={handleSubmit} techSuggestions={techSuggestions} />
     </>
   );
 }

@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
-import { FiAlertCircle, FiArrowLeft, FiChevronRight, FiTrash2 } from "react-icons/fi";
+import { FiAlertCircle, FiArrowLeft, FiExternalLink } from "react-icons/fi";
 import FormProject from "@/components/FormProject";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { deleteProject, fetchProject, formatDate, updateProject, type Project, type ProjectInput } from "@/lib/projects";
 import { getErrorMessage } from "@/lib/api";
+import { button, panel } from "@/lib/ui";
+import { useProjects } from "@/hooks/useProjects";
 
 export default function EditProjectPage() {
   const router = useRouter();
@@ -20,6 +22,8 @@ export default function EditProjectPage() {
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const { projects } = useProjects();
+  const techSuggestions = useMemo(() => [...new Set(projects.flatMap((p) => p.tech_stack))].sort(), [projects]);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,7 +38,7 @@ export default function EditProjectPage() {
   const handleSubmit = async (values: ProjectInput) => {
     try {
       await updateProject(id, values);
-      toast.success("Perubahan berhasil disimpan");
+      toast.success("Perubahan disimpan");
       router.push("/project");
     } catch (err) {
       toast.error(getErrorMessage(err, "Gagal menyimpan perubahan"));
@@ -45,7 +49,7 @@ export default function EditProjectPage() {
     setDeleting(true);
     try {
       await deleteProject(id);
-      toast.success("Project berhasil dihapus");
+      toast.success(`"${project?.title}" dihapus`);
       router.push("/project");
     } catch (err) {
       toast.error(getErrorMessage(err, "Gagal menghapus project"));
@@ -55,35 +59,30 @@ export default function EditProjectPage() {
 
   return (
     <>
-      <nav className="flex items-center gap-1 text-sm text-muted mb-3" aria-label="Breadcrumb">
-        <Link href="/project" className="hover:text-foreground">
-          Projects
-        </Link>
-        <FiChevronRight />
-        <span className="text-foreground truncate">{project?.title ?? "Edit"}</span>
-      </nav>
-
       <PageHeader
-        title="Edit Project"
+        trail={[{ href: "/project", label: "Projects" }]}
+        title={project?.title ?? (error ? "Project" : "\u00a0")}
         description={
-          project?.created_at
-            ? `Ditambahkan pada ${formatDate(project.created_at, "long")}`
-            : "Perbarui detail project dan simpan perubahan."
+          project?.created_at ? `Ditambahkan ${formatDate(project.created_at, "long")}` : error ? undefined : "\u00a0"
+        }
+        actions={
+          project?.demo_url ? (
+            <a href={project.demo_url} target="_blank" rel="noreferrer" className={button("secondary", "sm")}>
+              <FiExternalLink /> Lihat demo
+            </a>
+          ) : undefined
         }
       />
 
       {error ? (
-        <div className="rounded-2xl border border-line bg-surface">
+        <div className={panel}>
           <EmptyState
             tone="danger"
             icon={<FiAlertCircle />}
             title="Project tidak dapat dimuat"
             description={error}
             action={
-              <Link
-                href="/project"
-                className="h-10 px-4 rounded-xl border border-line text-sm font-medium inline-flex items-center gap-2 hover:bg-surface-muted"
-              >
+              <Link href="/project" className={button("secondary", "sm")}>
                 <FiArrowLeft /> Kembali ke Projects
               </Link>
             }
@@ -103,16 +102,19 @@ export default function EditProjectPage() {
             imageUrl: project.image_url ?? null,
           }}
           onSubmit={handleSubmit}
+          techSuggestions={techSuggestions}
           footer={
-            <section className="rounded-2xl border border-danger/30 bg-surface p-5 md:p-6">
-              <h2 className="font-semibold text-danger">Zona Berbahaya</h2>
-              <p className="text-sm text-muted mt-0.5 mb-4">Menghapus project bersifat permanen.</p>
+            <section className="flex flex-col sm:flex-row sm:items-center gap-4 justify-between rounded-lg border border-danger/25 p-5">
+              <div>
+                <h2 className="text-sm font-medium">Hapus project</h2>
+                <p className="text-[13px] text-muted mt-1">Project akan hilang dari portfolio. Tidak bisa dibatalkan.</p>
+              </div>
               <button
                 type="button"
                 onClick={() => setConfirmDelete(true)}
-                className="w-full h-10 rounded-xl border border-danger/40 text-danger text-sm font-semibold flex items-center justify-center gap-2 hover:bg-danger-soft transition"
+                className={button("secondary", "sm", "shrink-0 !text-danger hover:!bg-danger-soft hover:!border-danger/40")}
               >
-                <FiTrash2 /> Hapus Project
+                Hapus project
               </button>
             </section>
           }
@@ -121,11 +123,11 @@ export default function EditProjectPage() {
 
       <ConfirmDialog
         open={confirmDelete}
-        title="Hapus project?"
+        title="Hapus project ini?"
         description={
           <>
-            Project <span className="font-semibold text-foreground">&ldquo;{project?.title}&rdquo;</span> akan dihapus
-            permanen dan tidak bisa dikembalikan.
+            <span className="font-medium text-foreground">{project?.title}</span> akan dihapus dari portfolio. Tindakan
+            ini tidak bisa dibatalkan.
           </>
         }
         loading={deleting}
@@ -138,29 +140,27 @@ export default function EditProjectPage() {
 
 function FormSkeleton() {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <div className="lg:col-span-8 space-y-6">
-        {[3, 3].map((rows, i) => (
-          <div key={i} className="rounded-2xl border border-line bg-surface p-6 space-y-5">
-            <div className="h-4 w-40 rounded bg-surface-muted animate-pulse" />
-            {Array.from({ length: rows }).map((_, j) => (
-              <div key={j} className="space-y-2">
-                <div className="h-3 w-24 rounded bg-surface-muted animate-pulse" />
-                <div className="h-11 rounded-xl bg-surface-muted animate-pulse" />
-              </div>
-            ))}
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-6 items-start">
+      <div className={`${panel} divide-y divide-line`}>
+        {[2, 2, 1].map((rows, i) => (
+          <div key={i} className="grid grid-cols-1 md:grid-cols-[200px_minmax(0,1fr)] gap-x-8 gap-y-4 p-5 md:p-6">
+            <div className="space-y-2">
+              <div className="h-3.5 w-20 rounded bg-surface-muted animate-pulse" />
+              <div className="h-3 w-36 rounded bg-surface-muted animate-pulse" />
+            </div>
+            <div className="space-y-5">
+              {Array.from({ length: rows }).map((_, j) => (
+                <div key={j} className="space-y-2">
+                  <div className="h-3 w-16 rounded bg-surface-muted animate-pulse" />
+                  <div className="h-9 rounded-md bg-surface-muted animate-pulse" />
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>
-      <div className="lg:col-span-4 space-y-6">
-        <div className="rounded-2xl border border-line bg-surface p-6 space-y-4">
-          <div className="h-4 w-32 rounded bg-surface-muted animate-pulse" />
-          <div className="aspect-[16/10] rounded-xl bg-surface-muted animate-pulse" />
-        </div>
-        <div className="rounded-2xl border border-line bg-surface p-6 space-y-3">
-          <div className="h-11 rounded-xl bg-surface-muted animate-pulse" />
-          <div className="h-11 rounded-xl bg-surface-muted animate-pulse" />
-        </div>
+      <div className={`${panel} p-4`}>
+        <div className="aspect-[16/9] rounded-md bg-surface-muted animate-pulse" />
       </div>
     </div>
   );

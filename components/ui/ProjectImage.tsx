@@ -14,10 +14,8 @@ export default function ProjectImage({ src, alt, className = "" }: Props) {
 
   if (!src || failedSrc === src) {
     return (
-      <div
-        className={`flex items-center justify-center bg-gradient-to-br from-indigo-500/15 via-violet-500/10 to-fuchsia-500/15 text-primary ${className}`}
-      >
-        <FiImage className="text-xl opacity-70" />
+      <div className={`flex items-center justify-center bg-surface-muted text-subtle ${className}`}>
+        <FiImage aria-hidden />
       </div>
     );
   }

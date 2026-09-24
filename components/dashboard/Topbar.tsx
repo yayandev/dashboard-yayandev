@@ -2,19 +2,25 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
-import { FiMenu, FiMoon, FiPlus, FiSearch, FiSun, FiX } from "react-icons/fi";
-import { useTheme } from "@/components/Providers";
+import { useEffect, useRef, useState } from "react";
+import { FiMenu, FiPlus, FiSearch, FiX } from "react-icons/fi";
+import { button } from "@/lib/ui";
+import Kbd from "@/components/ui/Kbd";
 
 interface Props {
   onOpenSidebar: () => void;
+}
+
+function isTypingTarget(el: EventTarget | null) {
+  if (!(el instanceof HTMLElement)) return false;
+  return el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName);
 }
 
 export default function Topbar({ onOpenSidebar }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { theme, toggleTheme } = useTheme();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const q = searchParams.get("q") ?? "";
   const [value, setValue] = useState(q);
@@ -25,6 +31,19 @@ export default function Topbar({ onOpenSidebar }: Props) {
     setPrevQ(q);
     setValue(q);
   }
+
+  // "/" focuses search from anywhere, like most dev tools.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "/" && !e.metaKey && !e.ctrlKey && !isTypingTarget(e.target)) {
+        e.preventDefault();
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const onProjectList = pathname === "/project";
 
@@ -37,26 +56,28 @@ export default function Topbar({ onOpenSidebar }: Props) {
     else router.push(url);
   };
 
+  const clear = () => {
+    setValue("");
+    if (onProjectList) applySearch("", true);
+  };
+
   return (
-    <header className="sticky top-0 z-30 h-16 bg-surface/80 backdrop-blur-md border-b border-line px-4 md:px-6 flex items-center gap-3">
-      <button
-        onClick={onOpenSidebar}
-        className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-surface-muted"
-        aria-label="Buka menu"
-      >
-        <FiMenu className="text-xl" />
+    <header className="sticky top-0 z-30 h-14 bg-background/85 backdrop-blur border-b border-line px-4 md:px-6 flex items-center gap-2">
+      <button onClick={onOpenSidebar} className={button("ghost", "icon", "lg:hidden -ml-2")} aria-label="Buka menu">
+        <FiMenu className="text-base" />
       </button>
 
       <form
         role="search"
-        className="relative flex-1 max-w-md"
+        className="relative flex-1 max-w-sm"
         onSubmit={(e) => {
           e.preventDefault();
           applySearch(value, onProjectList);
         }}
       >
-        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+        <FiSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 text-subtle pointer-events-none" />
         <input
+          ref={inputRef}
           type="search"
           value={value}
           onChange={(e) => {
@@ -64,42 +85,36 @@ export default function Topbar({ onOpenSidebar }: Props) {
             // Filter live when already on the project list.
             if (onProjectList) applySearch(e.target.value, true);
           }}
-          placeholder="Cari project atau teknologi..."
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              if (value) clear();
+              else e.currentTarget.blur();
+            }
+          }}
+          placeholder="Cari project atau teknologi"
           aria-label="Cari project"
-          className="w-full h-10 pl-10 pr-9 bg-surface-muted border border-transparent rounded-xl text-sm outline-none placeholder:text-muted focus:bg-surface focus:border-primary focus:ring-4 focus:ring-primary/15 transition [&::-webkit-search-cancel-button]:hidden"
+          className="peer w-full h-8 pl-8 pr-8 rounded-md border border-line bg-surface text-sm outline-none placeholder:text-subtle hover:border-line-strong focus:border-accent focus:ring-3 focus:ring-accent/15 transition-[border-color,box-shadow] [&::-webkit-search-cancel-button]:hidden"
         />
-        {value && (
+        {value ? (
           <button
             type="button"
-            onClick={() => {
-              setValue("");
-              if (onProjectList) applySearch("", true);
-            }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted hover:text-foreground"
+            onClick={clear}
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded flex items-center justify-center text-muted hover:text-foreground"
             aria-label="Hapus pencarian"
           >
             <FiX />
           </button>
+        ) : (
+          <Kbd className="hidden sm:inline-flex absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none peer-focus:hidden">
+            /
+          </Kbd>
         )}
       </form>
 
-      <div className="ml-auto flex items-center gap-2">
-        <button
-          onClick={toggleTheme}
-          className="hidden sm:flex w-10 h-10 items-center justify-center rounded-xl text-muted hover:bg-surface-muted hover:text-foreground transition"
-          aria-label="Ganti tema"
-          title={theme === "dark" ? "Mode terang" : "Mode gelap"}
-        >
-          {theme === "dark" ? <FiSun className="text-lg" /> : <FiMoon className="text-lg" />}
-        </button>
-
-        <Link
-          href="/create-project"
-          className="h-10 w-10 sm:w-auto sm:px-4 bg-primary text-white dark:text-slate-950 rounded-xl text-sm font-semibold hover:bg-primary-hover transition flex items-center justify-center gap-2 shadow-sm shadow-indigo-500/20"
-          aria-label="Tambah project"
-        >
-          <FiPlus className="text-lg" />
-          <span className="hidden sm:inline">Tambah Project</span>
+      <div className="ml-auto">
+        <Link href="/create-project" className={button("primary", "sm", "max-sm:w-8 max-sm:px-0")} aria-label="Tambah project">
+          <FiPlus />
+          <span className="hidden sm:inline">Project baru</span>
         </Link>
       </div>
     </header>

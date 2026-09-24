@@ -21,6 +21,7 @@ import {
 import { useProjects } from "@/hooks/useProjects";
 import { deleteProject, formatDate, type Project } from "@/lib/projects";
 import { getErrorMessage } from "@/lib/api";
+import { button, panel } from "@/lib/ui";
 import PageHeader from "@/components/ui/PageHeader";
 import ProjectImage from "@/components/ui/ProjectImage";
 import TechBadge from "@/components/ui/TechBadge";
@@ -78,10 +79,16 @@ export default function ProjectList() {
     router.replace(`${pathname}${params.toString() ? `?${params}` : ""}`, { scroll: false });
   };
 
+  const resetFilters = () => {
+    const params = new URLSearchParams();
+    if (searchParams.get("sort")) params.set("sort", sort);
+    router.replace(`${pathname}${params.toString() ? `?${params}` : ""}`, { scroll: false });
+  };
+
   const allTech = useMemo(() => {
-    const set = new Map<string, number>();
-    projects.forEach((p) => p.tech_stack.forEach((t) => set.set(t, (set.get(t) ?? 0) + 1)));
-    return [...set.entries()].sort((a, b) => b[1] - a[1]).map(([t]) => t);
+    const counts = new Map<string, number>();
+    projects.forEach((p) => p.tech_stack.forEach((t) => counts.set(t, (counts.get(t) ?? 0) + 1)));
+    return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   }, [projects]);
 
   const filtered = useMemo(() => {
@@ -117,7 +124,7 @@ export default function ProjectList() {
     try {
       await deleteProject(toDelete.id);
       removeLocal(toDelete.id);
-      toast.success(`Project "${toDelete.title}" berhasil dihapus`);
+      toast.success(`"${toDelete.title}" dihapus`);
       setToDelete(null);
     } catch (err) {
       toast.error(getErrorMessage(err, "Gagal menghapus project"));
@@ -132,14 +139,9 @@ export default function ProjectList() {
     <>
       <PageHeader
         title="Projects"
-        description="Kelola semua project yang tampil di portfolio kamu."
+        description="Semua project yang tampil di portfolio."
         actions={
-          <button
-            onClick={refetch}
-            disabled={loading}
-            className="h-10 px-3.5 rounded-xl border border-line bg-surface text-sm font-medium flex items-center gap-2 hover:bg-surface-muted transition disabled:opacity-60"
-            aria-label="Muat ulang"
-          >
+          <button onClick={refetch} disabled={loading} className={button("secondary", "sm")} aria-label="Muat ulang">
             <FiRefreshCw className={loading ? "animate-spin" : ""} />
             <span className="hidden sm:inline">Muat ulang</span>
           </button>
@@ -147,24 +149,65 @@ export default function ProjectList() {
       />
 
       {/* Toolbar */}
-      <div className="rounded-2xl border border-line bg-surface p-3 md:p-4 mb-4 space-y-3 animate-fade-in">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-sm text-muted mr-auto">
-            {loading ? (
-              "Memuat project..."
-            ) : (
-              <>
-                Menampilkan <span className="font-semibold text-foreground">{filtered.length}</span> dari{" "}
-                {projects.length} project
-              </>
-            )}
-          </p>
+      <div className="space-y-3 mb-4">
+        {allTech.length > 0 && (
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-none -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap">
+            {allTech.map(([t, count]) => {
+              const active = tech.toLowerCase() === t.toLowerCase();
+              return (
+                <button
+                  key={t}
+                  onClick={() => setParam("tech", active ? "" : t)}
+                  aria-pressed={active}
+                  className={`shrink-0 inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border text-xs transition-colors ${
+                    active
+                      ? "bg-foreground text-background border-foreground"
+                      : "border-line bg-surface text-muted hover:text-foreground hover:border-line-strong"
+                  }`}
+                >
+                  {t}
+                  <span className={`font-mono text-[10px] ${active ? "opacity-60" : "text-subtle"}`}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
+        <div className="flex flex-wrap items-center gap-2 min-h-8">
+          <div className="flex flex-wrap items-center gap-2 mr-auto text-[13px] text-muted">
+            {loading ? (
+              "Memuat…"
+            ) : (
+              <span>
+                <span className="font-mono text-foreground tabular-nums">{filtered.length}</span>
+                {hasFilter && <> dari {projects.length}</>} project
+              </span>
+            )}
+            {q && (
+              <FilterChip onClear={() => setParam("q", "")} label="Hapus kata kunci">
+                <FiSearch className="text-subtle" /> {q}
+              </FilterChip>
+            )}
+            {tech && (
+              <FilterChip onClear={() => setParam("tech", "")} label="Hapus filter teknologi">
+                {tech}
+              </FilterChip>
+            )}
+            {hasFilter && (
+              <button onClick={resetFilters} className="text-xs text-subtle hover:text-foreground transition-colors">
+                Reset
+              </button>
+            )}
+          </div>
+
+          <label className="sr-only" htmlFor="sort">
+            Urutkan
+          </label>
           <select
+            id="sort"
             value={sort}
             onChange={(e) => setParam("sort", e.target.value === "newest" ? "" : e.target.value)}
-            className="h-9 pl-3 pr-8 rounded-lg border border-line bg-surface text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
-            aria-label="Urutkan"
+            className="h-8 pl-2.5 pr-7 rounded-md border border-line bg-surface text-[13px] outline-none hover:border-line-strong focus:border-accent focus:ring-3 focus:ring-accent/15"
           >
             {(Object.keys(sortLabels) as Sort[]).map((s) => (
               <option key={s} value={s}>
@@ -173,20 +216,21 @@ export default function ProjectList() {
             ))}
           </select>
 
-          <div className="flex rounded-lg border border-line p-0.5 bg-surface-muted">
+          <div className="flex rounded-md border border-line p-0.5 bg-surface" role="group" aria-label="Tampilan">
             {(
               [
-                ["grid", FiGrid, "Tampilan grid"],
-                ["table", FiList, "Tampilan tabel"],
+                ["grid", FiGrid, "Grid"],
+                ["table", FiList, "Tabel"],
               ] as const
             ).map(([v, Icon, label]) => (
               <button
                 key={v}
                 onClick={() => saveView(v)}
                 aria-label={label}
+                title={label}
                 aria-pressed={view === v}
-                className={`w-8 h-8 rounded-md flex items-center justify-center transition ${
-                  view === v ? "bg-surface shadow-sm text-primary" : "text-muted hover:text-foreground"
+                className={`w-7 h-6 rounded-[4px] flex items-center justify-center text-[13px] transition-colors ${
+                  view === v ? "bg-surface-muted text-foreground" : "text-subtle hover:text-foreground"
                 }`}
               >
                 <Icon />
@@ -194,90 +238,34 @@ export default function ProjectList() {
             ))}
           </div>
         </div>
-
-        {allTech.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-1 px-1 pb-0.5">
-            <button
-              onClick={() => setParam("tech", "")}
-              className={`shrink-0 h-8 px-3 rounded-full text-xs font-medium border transition ${
-                !tech
-                  ? "bg-primary text-white dark:text-slate-950 border-primary"
-                  : "border-line text-muted hover:text-foreground hover:bg-surface-muted"
-              }`}
-            >
-              Semua
-            </button>
-            {allTech.map((t) => {
-              const active = tech.toLowerCase() === t.toLowerCase();
-              return (
-                <button
-                  key={t}
-                  onClick={() => setParam("tech", active ? "" : t)}
-                  className={`shrink-0 h-8 px-3 rounded-full text-xs font-medium border transition ${
-                    active
-                      ? "bg-primary text-white dark:text-slate-950 border-primary"
-                      : "border-line text-muted hover:text-foreground hover:bg-surface-muted"
-                  }`}
-                >
-                  {t}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {hasFilter && (
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            {q && (
-              <span className="inline-flex items-center gap-1.5 h-7 pl-2.5 pr-1.5 rounded-full bg-primary-soft text-primary font-medium">
-                <FiSearch /> &ldquo;{q}&rdquo;
-                <button onClick={() => setParam("q", "")} aria-label="Hapus kata kunci" className="p-0.5 rounded-full hover:bg-primary/15">
-                  <FiX />
-                </button>
-              </span>
-            )}
-            <button
-              onClick={() => router.replace(pathname, { scroll: false })}
-              className="text-muted hover:text-foreground underline underline-offset-2"
-            >
-              Reset filter
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Content */}
       {loading ? (
         <SkeletonGrid />
       ) : error ? (
-        <div className="rounded-2xl border border-line bg-surface">
+        <div className={panel}>
           <EmptyState
             tone="danger"
             icon={<FiAlertCircle />}
             title="Gagal memuat project"
             description={error}
             action={
-              <button
-                onClick={refetch}
-                className="h-10 px-4 rounded-xl border border-line text-sm font-medium inline-flex items-center gap-2 hover:bg-surface-muted"
-              >
+              <button onClick={refetch} className={button("secondary", "sm")}>
                 <FiRefreshCw /> Coba lagi
               </button>
             }
           />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-2xl border border-line bg-surface">
+        <div className={`${panel} border-dashed`}>
           {hasFilter ? (
             <EmptyState
               icon={<FiSearch />}
-              title="Tidak ada project yang cocok"
-              description="Coba kata kunci lain atau hapus filter yang aktif."
+              title="Tidak ada yang cocok"
+              description="Coba kata kunci lain atau lepas filter yang aktif."
               action={
-                <button
-                  onClick={() => router.replace(pathname)}
-                  className="h-10 px-4 rounded-xl border border-line text-sm font-medium hover:bg-surface-muted"
-                >
+                <button onClick={resetFilters} className={button("secondary", "sm")}>
                   Reset filter
                 </button>
               }
@@ -288,11 +276,8 @@ export default function ProjectList() {
               title="Belum ada project"
               description="Project yang kamu tambahkan akan muncul di sini."
               action={
-                <Link
-                  href="/create-project"
-                  className="h-10 px-4 rounded-xl bg-primary text-white dark:text-slate-950 text-sm font-semibold inline-flex items-center gap-2 hover:bg-primary-hover"
-                >
-                  <FiPlus /> Tambah Project
+                <Link href="/create-project" className={button("primary", "sm")}>
+                  <FiPlus /> Project baru
                 </Link>
               }
             />
@@ -300,8 +285,8 @@ export default function ProjectList() {
         </div>
       ) : view === "grid" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((p, i) => (
-            <ProjectCard key={p.id} project={p} index={i} onDelete={() => setToDelete(p)} />
+          {filtered.map((p) => (
+            <ProjectCard key={p.id} project={p} onDelete={() => setToDelete(p)} />
           ))}
         </div>
       ) : (
@@ -310,11 +295,11 @@ export default function ProjectList() {
 
       <ConfirmDialog
         open={Boolean(toDelete)}
-        title="Hapus project?"
+        title="Hapus project ini?"
         description={
           <>
-            Project <span className="font-semibold text-foreground">&ldquo;{toDelete?.title}&rdquo;</span> akan
-            dihapus permanen dan tidak bisa dikembalikan.
+            <span className="font-medium text-foreground">{toDelete?.title}</span> akan dihapus dari portfolio. Tindakan
+            ini tidak bisa dibatalkan.
           </>
         }
         loading={deleting}
@@ -325,43 +310,45 @@ export default function ProjectList() {
   );
 }
 
-function LinkButtons({ project }: { project: Project }) {
+function FilterChip({ children, label, onClear }: { children: React.ReactNode; label: string; onClear: () => void }) {
   return (
-    <>
-      {project.github_url && (
-        <a
-          href={project.github_url}
-          target="_blank"
-          rel="noreferrer"
-          className="w-9 h-9 rounded-lg flex items-center justify-center text-muted hover:text-foreground hover:bg-surface-muted transition"
-          aria-label="Buka repository GitHub"
-          title="GitHub"
-        >
-          <FiGithub />
-        </a>
-      )}
-      {project.demo_url && (
-        <a
-          href={project.demo_url}
-          target="_blank"
-          rel="noreferrer"
-          className="w-9 h-9 rounded-lg flex items-center justify-center text-muted hover:text-foreground hover:bg-surface-muted transition"
-          aria-label="Buka live demo"
-          title="Live demo"
-        >
-          <FiExternalLink />
-        </a>
-      )}
-    </>
+    <span className="inline-flex items-center gap-1 h-6 pl-2 pr-0.5 rounded-md border border-line bg-surface text-xs text-foreground">
+      {children}
+      <button
+        onClick={onClear}
+        aria-label={label}
+        className="w-5 h-5 rounded flex items-center justify-center text-subtle hover:text-foreground"
+      >
+        <FiX />
+      </button>
+    </span>
   );
 }
 
-function ActionButtons({ project, onDelete }: { project: Project; onDelete: () => void }) {
+function IconLink({ href, label, children }: { href: string; label: string; children: React.ReactNode }) {
   return (
-    <>
+    <a href={href} target="_blank" rel="noreferrer" className={button("ghost", "icon-sm")} aria-label={label} title={label}>
+      {children}
+    </a>
+  );
+}
+
+function RowActions({ project, onDelete }: { project: Project; onDelete: () => void }) {
+  return (
+    <div className="flex items-center">
+      {project.github_url && (
+        <IconLink href={project.github_url} label="Repository GitHub">
+          <FiGithub />
+        </IconLink>
+      )}
+      {project.demo_url && (
+        <IconLink href={project.demo_url} label="Live demo">
+          <FiExternalLink />
+        </IconLink>
+      )}
       <Link
         href={`/project/${project.id}`}
-        className="w-9 h-9 rounded-lg flex items-center justify-center text-muted hover:text-primary hover:bg-primary-soft transition"
+        className={button("ghost", "icon-sm")}
         aria-label={`Edit ${project.title}`}
         title="Edit"
       >
@@ -369,80 +356,75 @@ function ActionButtons({ project, onDelete }: { project: Project; onDelete: () =
       </Link>
       <button
         onClick={onDelete}
-        className="w-9 h-9 rounded-lg flex items-center justify-center text-muted hover:text-danger hover:bg-danger-soft transition"
+        className={button("ghost", "icon-sm", "hover:!text-danger hover:!bg-danger-soft")}
         aria-label={`Hapus ${project.title}`}
         title="Hapus"
       >
         <FiTrash2 />
       </button>
-    </>
+    </div>
   );
 }
 
-function ProjectCard({ project, index, onDelete }: { project: Project; index: number; onDelete: () => void }) {
+function ProjectCard({ project, onDelete }: { project: Project; onDelete: () => void }) {
   return (
-    <article
-      style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
-      className="group flex flex-col rounded-2xl border border-line bg-surface overflow-hidden hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-0.5 hover:border-primary/40 transition-all duration-300 animate-fade-in"
-    >
-      <Link href={`/project/${project.id}`} className="relative block aspect-[16/9] overflow-hidden bg-surface-muted">
-        <ProjectImage
-          src={project.image_url}
-          alt={project.title}
-          className="w-full h-full group-hover:scale-105 transition-transform duration-500"
-        />
-        <span className="absolute top-3 left-3 text-[11px] font-medium px-2 py-1 rounded-md bg-slate-950/60 text-white backdrop-blur-sm">
-          {formatDate(project.created_at)}
-        </span>
+    <article className={`${panel} group flex flex-col overflow-hidden hover:border-line-strong transition-colors`}>
+      <Link
+        href={`/project/${project.id}`}
+        className="block aspect-[16/9] overflow-hidden border-b border-line bg-surface-muted"
+        tabIndex={-1}
+        aria-hidden
+      >
+        <ProjectImage src={project.image_url} alt="" className="w-full h-full text-2xl" />
       </Link>
 
       <div className="flex-1 flex flex-col p-4">
-        <Link href={`/project/${project.id}`}>
-          <h3 className="font-semibold leading-snug line-clamp-1 group-hover:text-primary transition-colors">
+        <h3 className="font-medium leading-snug line-clamp-1">
+          <Link href={`/project/${project.id}`} className="hover:underline underline-offset-2 decoration-line-strong">
             {project.title}
-          </h3>
-        </Link>
-        <p className="text-sm text-muted mt-1.5 line-clamp-2 flex-1">{project.description || "Tanpa deskripsi"}</p>
+          </Link>
+        </h3>
+        <p className="text-sm text-muted mt-1 line-clamp-2 flex-1">
+          {project.description || <span className="text-subtle">Tanpa deskripsi</span>}
+        </p>
 
         {project.tech_stack.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-3">
+          <div className="flex flex-wrap gap-1 mt-3">
             {project.tech_stack.slice(0, 4).map((t) => (
               <TechBadge key={t} name={t} />
             ))}
             {project.tech_stack.length > 4 && (
-              <span className="text-[11px] text-muted self-center">+{project.tech_stack.length - 4}</span>
+              <span className="font-mono text-[11px] text-subtle self-center">+{project.tech_stack.length - 4}</span>
             )}
           </div>
         )}
-
-        <div className="flex items-center gap-1 mt-4 pt-3 border-t border-line -mx-1">
-          <LinkButtons project={project} />
-          <div className="ml-auto flex items-center gap-1">
-            <ActionButtons project={project} onDelete={onDelete} />
-          </div>
-        </div>
       </div>
+
+      <footer className="flex items-center justify-between h-10 pl-4 pr-1.5 border-t border-line">
+        <time dateTime={project.created_at ?? undefined} className="font-mono text-[11px] text-subtle">
+          {formatDate(project.created_at)}
+        </time>
+        <RowActions project={project} onDelete={onDelete} />
+      </footer>
     </article>
   );
 }
 
 function ProjectTable({ projects, onDelete }: { projects: Project[]; onDelete: (p: Project) => void }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface overflow-hidden animate-fade-in">
+    <div className={`${panel} overflow-hidden`}>
       {/* Mobile: compact list */}
       <ul className="md:hidden divide-y divide-line">
         {projects.map((p) => (
-          <li key={p.id} className="flex items-center gap-3 p-3">
-            <ProjectImage src={p.image_url} alt={p.title} className="w-16 h-12 rounded-lg border border-line shrink-0" />
+          <li key={p.id} className="flex items-center gap-3 pl-3 pr-1.5 py-2.5">
+            <ProjectImage src={p.image_url} alt="" className="w-12 h-9 rounded border border-line shrink-0 text-xs" />
             <div className="min-w-0 flex-1">
               <Link href={`/project/${p.id}`} className="text-sm font-medium line-clamp-1">
                 {p.title}
               </Link>
-              <p className="text-xs text-muted mt-0.5">{formatDate(p.created_at)}</p>
+              <p className="font-mono text-[11px] text-subtle mt-0.5">{formatDate(p.created_at)}</p>
             </div>
-            <div className="flex items-center">
-              <ActionButtons project={p} onDelete={() => onDelete(p)} />
-            </div>
+            <RowActions project={p} onDelete={() => onDelete(p)} />
           </li>
         ))}
       </ul>
@@ -451,46 +433,52 @@ function ProjectTable({ projects, onDelete }: { projects: Project[]; onDelete: (
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-line bg-surface-muted/60 text-xs uppercase tracking-wider text-muted">
-              <th className="py-3 px-4 font-semibold">Project</th>
-              <th className="py-3 px-4 font-semibold">Tech Stack</th>
-              <th className="py-3 px-4 font-semibold whitespace-nowrap">Tanggal</th>
-              <th className="py-3 px-4 font-semibold text-right">Aksi</th>
+            <tr className="border-b border-line text-xs text-muted">
+              <th className="h-9 px-4 font-medium">Project</th>
+              <th className="h-9 px-4 font-medium">Tech stack</th>
+              <th className="h-9 px-4 font-medium whitespace-nowrap">Ditambahkan</th>
+              <th className="h-9 px-4 font-medium">
+                <span className="sr-only">Aksi</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
             {projects.map((p) => (
               <tr key={p.id} className="hover:bg-surface-muted/50 transition-colors">
-                <td className="py-3 px-4">
+                <td className="py-2.5 px-4">
                   <div className="flex items-center gap-3 min-w-[260px]">
                     <ProjectImage
                       src={p.image_url}
-                      alt={p.title}
-                      className="w-16 h-11 rounded-lg border border-line shrink-0"
+                      alt=""
+                      className="w-12 h-8 rounded border border-line shrink-0 text-xs"
                     />
                     <div className="min-w-0">
-                      <Link href={`/project/${p.id}`} className="font-medium hover:text-primary line-clamp-1">
+                      <Link
+                        href={`/project/${p.id}`}
+                        className="font-medium hover:underline underline-offset-2 decoration-line-strong line-clamp-1"
+                      >
                         {p.title}
                       </Link>
                       <p className="text-xs text-muted line-clamp-1 mt-0.5 max-w-xs">{p.description}</p>
                     </div>
                   </div>
                 </td>
-                <td className="py-3 px-4">
+                <td className="py-2.5 px-4">
                   <div className="flex flex-wrap gap-1 max-w-[260px]">
                     {p.tech_stack.slice(0, 3).map((t) => (
                       <TechBadge key={t} name={t} />
                     ))}
                     {p.tech_stack.length > 3 && (
-                      <span className="text-[11px] text-muted self-center">+{p.tech_stack.length - 3}</span>
+                      <span className="font-mono text-[11px] text-subtle self-center">+{p.tech_stack.length - 3}</span>
                     )}
                   </div>
                 </td>
-                <td className="py-3 px-4 text-muted whitespace-nowrap">{formatDate(p.created_at)}</td>
-                <td className="py-3 px-4">
-                  <div className="flex items-center justify-end">
-                    <LinkButtons project={p} />
-                    <ActionButtons project={p} onDelete={() => onDelete(p)} />
+                <td className="py-2.5 px-4 font-mono text-xs text-muted whitespace-nowrap">
+                  {formatDate(p.created_at)}
+                </td>
+                <td className="py-2.5 px-2">
+                  <div className="flex justify-end">
+                    <RowActions project={p} onDelete={() => onDelete(p)} />
                   </div>
                 </td>
               </tr>
@@ -506,17 +494,14 @@ function SkeletonGrid() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="rounded-2xl border border-line bg-surface overflow-hidden">
+        <div key={i} className={`${panel} overflow-hidden`}>
           <div className="aspect-[16/9] bg-surface-muted animate-pulse" />
-          <div className="p-4 space-y-3">
+          <div className="p-4 space-y-2.5">
             <div className="h-4 w-2/3 rounded bg-surface-muted animate-pulse" />
             <div className="h-3 w-full rounded bg-surface-muted animate-pulse" />
             <div className="h-3 w-4/5 rounded bg-surface-muted animate-pulse" />
-            <div className="flex gap-2 pt-1">
-              <div className="h-5 w-14 rounded bg-surface-muted animate-pulse" />
-              <div className="h-5 w-16 rounded bg-surface-muted animate-pulse" />
-            </div>
           </div>
+          <div className="h-10 border-t border-line" />
         </div>
       ))}
     </div>
