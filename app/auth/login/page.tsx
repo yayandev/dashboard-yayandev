@@ -8,14 +8,11 @@ import {
   FiArrowRight,
   FiEye,
   FiEyeOff,
-  FiFolder,
-  FiLayers,
   FiLock,
   FiMail,
   FiMoon,
   FiSun,
   FiTerminal,
-  FiZap,
 } from "react-icons/fi";
 import api, { getErrorMessage, TOKEN_COOKIE } from "@/lib/api";
 import { useTheme } from "@/components/Providers";
@@ -69,87 +66,48 @@ function LoginView() {
   };
 
   return (
-    <main className="min-h-dvh grid lg:grid-cols-2">
-      {/* Brand panel */}
-      <section className="relative hidden lg:flex flex-col justify-between overflow-hidden p-12 text-white bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600">
-        <div className="absolute inset-0 opacity-20 [background-size:36px_36px] [background-image:linear-gradient(to_right,white_1px,transparent_1px),linear-gradient(to_bottom,white_1px,transparent_1px)] [mask-image:radial-gradient(ellipse_at_top_left,black,transparent_70%)]" />
-        <div className="absolute -right-24 -bottom-24 w-96 h-96 rounded-full bg-white/10 blur-2xl" />
-
-        <div className="relative flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center">
-            <FiTerminal className="text-xl" />
+    <main className="min-h-dvh flex flex-col">
+      <header className="h-14 px-5 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-md bg-primary text-background flex items-center justify-center">
+            <FiTerminal className="text-sm" />
           </div>
-          <span className="font-semibold text-lg">YayanDev</span>
+          <span className="text-sm font-semibold">YayanDev</span>
+          <span className="font-mono text-[10px] text-muted">console</span>
         </div>
-
-        <div className="relative max-w-md">
-          <h2 className="text-4xl font-semibold leading-tight tracking-tight">
-            Kelola portfolio kamu dari satu tempat.
-          </h2>
-          <p className="text-white/80 mt-4">
-            Tambah, perbarui, dan pantau seluruh project yang tampil di website portfolio YayanDev.
-          </p>
-
-          <ul className="mt-10 space-y-4">
-            {[
-              { icon: FiFolder, text: "Kelola project dengan mudah" },
-              { icon: FiLayers, text: "Pantau statistik tech stack" },
-              { icon: FiZap, text: "Perubahan langsung tayang" },
-            ].map(({ icon: Icon, text }) => (
-              <li key={text} className="flex items-center gap-3 text-white/90">
-                <span className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center">
-                  <Icon />
-                </span>
-                {text}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <p className="relative text-sm text-white/60">© {new Date().getFullYear()} YayanDev</p>
-      </section>
-
-      {/* Form panel */}
-      <section className="relative flex flex-col items-center justify-center p-6 sm:p-10 overflow-hidden">
-        <div className="absolute inset-0 bg-grid opacity-60 lg:hidden [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)]" />
-
         <button
           onClick={toggleTheme}
-          className="absolute top-4 right-4 w-10 h-10 rounded-xl flex items-center justify-center text-muted hover:bg-surface-muted hover:text-foreground transition"
+          className="w-9 h-9 rounded-md flex items-center justify-center text-muted hover:bg-surface-muted hover:text-foreground transition"
           aria-label="Ganti tema"
         >
-          {theme === "dark" ? <FiSun className="text-lg" /> : <FiMoon className="text-lg" />}
+          {theme === "dark" ? <FiSun /> : <FiMoon />}
         </button>
+      </header>
 
-        <div className="relative w-full max-w-[400px] animate-fade-in">
-          <div className="lg:hidden flex justify-center mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/30">
-              <FiTerminal className="text-2xl" />
-            </div>
-          </div>
-
-          <div className="text-center lg:text-left mb-8">
-            <h1 className="text-3xl font-semibold tracking-tight">Selamat datang 👋</h1>
-            <p className="text-muted mt-2">Masuk ke Engineering Console untuk melanjutkan.</p>
+      <section className="flex-1 flex items-center justify-center px-5 py-10">
+        <div className="w-full max-w-[360px]">
+          <div className="mb-8">
+            <h1 className="text-2xl font-semibold tracking-tight">Masuk</h1>
+            <p className="text-sm text-muted mt-1.5">Kelola project yang tampil di portfolio YayanDev.</p>
           </div>
 
           {error && (
             <div
               role="alert"
-              className="flex items-start gap-2.5 rounded-xl border border-danger/30 bg-danger-soft text-danger px-4 py-3 mb-6 text-sm animate-fade-in"
+              className="flex items-start gap-2.5 rounded-md border border-danger/30 bg-danger-soft text-danger px-3 py-2.5 mb-5 text-sm"
             >
               <FiAlertCircle className="shrink-0 mt-0.5" />
               {error}
             </div>
           )}
 
-          <form className="space-y-5" onSubmit={handleLogin}>
+          <form className="space-y-4" onSubmit={handleLogin}>
             <div className="space-y-1.5">
               <label htmlFor="email" className="text-sm font-medium">
                 Email
               </label>
               <div className="relative">
-                <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+                <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                 <input
                   id="email"
                   type="email"
@@ -159,7 +117,7 @@ function LoginView() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoFocus
-                  className="w-full h-12 pl-10 pr-4 rounded-xl border border-line bg-surface outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 transition placeholder:text-muted/70"
+                  className="w-full h-10 pl-9 pr-3 rounded-md border border-line bg-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition placeholder:text-muted/70"
                 />
               </div>
             </div>
@@ -169,7 +127,7 @@ function LoginView() {
                 Password
               </label>
               <div className="relative">
-                <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+                <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
@@ -178,12 +136,12 @@ function LoginView() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full h-12 pl-10 pr-12 rounded-xl border border-line bg-surface outline-none focus:border-primary focus:ring-4 focus:ring-primary/15 transition placeholder:text-muted/70"
+                  className="w-full h-10 pl-9 pr-11 rounded-md border border-line bg-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition placeholder:text-muted/70"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg flex items-center justify-center text-muted hover:text-foreground"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 w-8 h-8 rounded flex items-center justify-center text-muted hover:text-foreground"
                   aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
                 >
                   {showPassword ? <FiEyeOff /> : <FiEye />}
@@ -196,7 +154,7 @@ function LoginView() {
                 type="checkbox"
                 checked={remember}
                 onChange={(e) => setRemember(e.target.checked)}
-                className="w-4 h-4 rounded accent-indigo-600"
+                className="w-4 h-4 rounded accent-zinc-900"
               />
               Ingat saya selama 7 hari
             </label>
@@ -204,11 +162,11 @@ function LoginView() {
             <button
               type="submit"
               disabled={loading}
-              className="group w-full h-12 rounded-xl bg-primary text-white dark:text-slate-950 font-semibold flex items-center justify-center gap-2 hover:bg-primary-hover transition shadow-lg shadow-indigo-500/25 disabled:opacity-70"
+              className="group w-full h-10 rounded-md bg-primary text-background text-sm font-medium flex items-center justify-center gap-2 hover:bg-primary-hover transition disabled:opacity-70"
             >
               {loading ? (
                 <>
-                  <Spinner className="w-5 h-5" /> Memproses...
+                  <Spinner className="w-4 h-4" /> Memproses...
                 </>
               ) : (
                 <>
@@ -220,6 +178,10 @@ function LoginView() {
           </form>
         </div>
       </section>
+
+      <footer className="h-14 px-5 flex items-center justify-between font-mono text-[11px] text-muted">
+        <span>© {new Date().getFullYear()} YayanDev</span>
+      </footer>
     </main>
   );
 }

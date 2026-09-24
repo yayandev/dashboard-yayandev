@@ -31,7 +31,7 @@ function isValidUrl(value: string) {
 }
 
 const inputClass = (hasError?: boolean) =>
-  `w-full h-11 px-3.5 rounded-xl border bg-surface text-[15px] outline-none placeholder:text-muted/70 transition focus:ring-4 ${
+  `w-full h-10 px-3 rounded-md border bg-surface text-sm outline-none placeholder:text-muted/70 transition focus:ring-2 ${
     hasError
       ? "border-danger focus:ring-danger/15"
       : "border-line focus:border-primary focus:ring-primary/15"
@@ -156,9 +156,9 @@ export default function FormProject({ formType, initialValues, onSubmit, footer 
     <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-24 lg:pb-0">
       {/* LEFT */}
       <div className="lg:col-span-8 space-y-6">
-        <section className="rounded-2xl border border-line bg-surface p-5 md:p-6 space-y-5 animate-fade-in">
+        <section className="rounded-lg border border-line bg-surface p-5 space-y-5">
           <div>
-            <h2 className="font-semibold">Informasi Project</h2>
+            <h2 className="text-sm font-semibold">Informasi Project</h2>
             <p className="text-sm text-muted mt-0.5">Detail utama yang ditampilkan di portfolio.</p>
           </div>
 
@@ -204,16 +204,16 @@ export default function FormProject({ formType, initialValues, onSubmit, footer 
           </Field>
         </section>
 
-        <section className="rounded-2xl border border-line bg-surface p-5 md:p-6 space-y-5 animate-fade-in">
+        <section className="rounded-lg border border-line bg-surface p-5 space-y-5">
           <div>
-            <h2 className="font-semibold">Link & Teknologi</h2>
+            <h2 className="text-sm font-semibold">Link & Teknologi</h2>
             <p className="text-sm text-muted mt-0.5">Tautan repository, demo, dan stack yang digunakan.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <Field label="GitHub URL" htmlFor="field-githubUrl" error={errors.githubUrl}>
               <div className="relative">
-                <FiGithub className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+                <FiGithub className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                 <input
                   id="field-githubUrl"
                   type="url"
@@ -224,14 +224,14 @@ export default function FormProject({ formType, initialValues, onSubmit, footer 
                     setGithubUrl(e.target.value);
                     if (errors.githubUrl) setErrors((x) => ({ ...x, githubUrl: undefined }));
                   }}
-                  className={`${inputClass(!!errors.githubUrl)} pl-10`}
+                  className={`${inputClass(!!errors.githubUrl)} pl-9`}
                 />
               </div>
             </Field>
 
             <Field label="Live Demo URL" htmlFor="field-demoUrl" error={errors.demoUrl}>
               <div className="relative">
-                <FiExternalLink className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+                <FiExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                 <input
                   id="field-demoUrl"
                   type="url"
@@ -242,7 +242,7 @@ export default function FormProject({ formType, initialValues, onSubmit, footer 
                     setDemoUrl(e.target.value);
                     if (errors.demoUrl) setErrors((x) => ({ ...x, demoUrl: undefined }));
                   }}
-                  className={`${inputClass(!!errors.demoUrl)} pl-10`}
+                  className={`${inputClass(!!errors.demoUrl)} pl-9`}
                 />
               </div>
             </Field>
@@ -253,7 +253,7 @@ export default function FormProject({ formType, initialValues, onSubmit, footer 
             htmlFor="field-tech"
             hint="Tekan Enter atau koma untuk menambahkan. Backspace untuk menghapus yang terakhir."
           >
-            <div className="flex flex-wrap items-center gap-1.5 min-h-11 px-2.5 py-2 rounded-xl border border-line bg-surface focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/15 transition">
+            <div className="flex flex-wrap items-center gap-1.5 min-h-10 px-2 py-1.5 rounded-md border border-line bg-surface focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition">
               {techStack.map((t) => (
                 <TechBadge key={t} name={t} className="!text-xs !py-1">
                   <button
@@ -285,7 +285,7 @@ export default function FormProject({ formType, initialValues, onSubmit, footer 
                   }
                 }}
                 onBlur={() => addTech(techInput)}
-                className="flex-1 min-w-[140px] h-7 bg-transparent outline-none text-[15px] placeholder:text-muted/70"
+                className="flex-1 min-w-[140px] h-7 bg-transparent outline-none text-sm placeholder:text-muted/70"
               />
             </div>
           </Field>
@@ -294,8 +294,8 @@ export default function FormProject({ formType, initialValues, onSubmit, footer 
 
       {/* RIGHT */}
       <div className="lg:col-span-4 space-y-6">
-        <section className="rounded-2xl border border-line bg-surface p-5 md:p-6 animate-fade-in">
-          <h2 className="font-semibold mb-1">Gambar Project</h2>
+        <section className="rounded-lg border border-line bg-surface p-5">
+          <h2 className="text-sm font-semibold mb-1">Gambar Project</h2>
           <p className="text-sm text-muted mb-4">Thumbnail yang tampil di kartu portfolio.</p>
 
           <input
@@ -310,13 +310,13 @@ export default function FormProject({ formType, initialValues, onSubmit, footer 
           />
 
           {preview ? (
-            <div className="group relative rounded-xl overflow-hidden border border-line aspect-[16/10] bg-surface-muted">
+            <div className="group relative rounded-md overflow-hidden border border-line aspect-[16/10] bg-surface-muted">
               <ProjectImage src={preview} alt="Preview gambar project" className="w-full h-full" />
-              <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/40 transition flex items-end justify-end gap-2 p-2">
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition flex items-end justify-end gap-2 p-2">
                 <button
                   type="button"
                   onClick={() => fileRef.current?.click()}
-                  className="h-8 px-3 rounded-lg bg-white/90 text-slate-900 text-xs font-semibold flex items-center gap-1.5 hover:bg-white shadow"
+                  className="h-8 px-3 rounded-lg bg-white text-zinc-900 text-xs font-medium flex items-center gap-1.5 hover:bg-white shadow"
                 >
                   <FiImage /> Ganti
                 </button>
@@ -333,7 +333,7 @@ export default function FormProject({ formType, initialValues, onSubmit, footer 
                 </button>
               </div>
               {image && (
-                <span className="absolute top-2 left-2 max-w-[70%] truncate text-[11px] px-2 py-1 rounded-md bg-slate-950/60 text-white backdrop-blur-sm">
+                <span className="absolute top-2 left-2 max-w-[70%] truncate text-[11px] px-2 py-1 rounded-md bg-black/60 text-white">
                   {image.name}
                 </span>
               )}
@@ -352,19 +352,19 @@ export default function FormProject({ formType, initialValues, onSubmit, footer 
                 setDragging(false);
                 pickFile(e.dataTransfer.files?.[0]);
               }}
-              className={`w-full aspect-[16/10] rounded-xl border-2 border-dashed flex flex-col items-center justify-center text-center p-6 transition ${
+              className={`w-full aspect-[16/10] rounded-md border border-dashed flex flex-col items-center justify-center text-center p-6 transition ${
                 dragging
-                  ? "border-primary bg-primary-soft"
+                  ? "border-foreground/50 bg-surface-muted"
                   : errors.image
                     ? "border-danger/60 bg-danger-soft"
-                    : "border-line bg-surface-muted hover:border-primary/60 hover:bg-primary-soft"
+                    : "border-line bg-surface-muted/50 hover:border-muted/60"
               }`}
             >
-              <div className="w-12 h-12 rounded-full bg-surface text-primary flex items-center justify-center shadow-sm mb-3">
+              <div className="w-9 h-9 rounded-md border border-line bg-surface text-muted flex items-center justify-center mb-3">
                 <FiUploadCloud className="text-xl" />
               </div>
               <p className="text-sm font-medium">
-                <span className="text-primary">Klik untuk upload</span> atau seret gambar ke sini
+                <span className="underline underline-offset-2">Klik untuk upload</span> atau seret gambar ke sini
               </p>
               <p className="text-xs text-muted mt-1">PNG, JPG, WEBP, GIF atau SVG · maks. 5 MB</p>
             </button>
@@ -373,9 +373,9 @@ export default function FormProject({ formType, initialValues, onSubmit, footer 
         </section>
 
         {/* Live preview */}
-        <section className="hidden lg:block rounded-2xl border border-line bg-surface p-5 md:p-6 animate-fade-in">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-3">Pratinjau Kartu</p>
-          <div className="rounded-xl border border-line overflow-hidden">
+        <section className="hidden lg:block rounded-lg border border-line bg-surface p-5">
+          <p className="font-mono text-[10px] uppercase tracking-wider text-muted mb-3">Pratinjau Kartu</p>
+          <div className="rounded-md border border-line overflow-hidden">
             <ProjectImage src={preview} alt="" className="w-full aspect-[16/9]" />
             <div className="p-3">
               <p className="font-semibold text-sm line-clamp-1">{title || "Judul project"}</p>
@@ -392,9 +392,9 @@ export default function FormProject({ formType, initialValues, onSubmit, footer 
         </section>
 
         {/* Actions: sticky bar on mobile, card on desktop */}
-        <section className="fixed lg:static inset-x-0 bottom-0 z-20 lg:z-auto border-t lg:border border-line bg-surface/95 lg:bg-surface backdrop-blur-md lg:backdrop-blur-none lg:rounded-2xl p-3 lg:p-6">
+        <section className="fixed lg:static inset-x-0 bottom-0 z-20 lg:z-auto border-t lg:border border-line bg-surface/95 lg:bg-surface backdrop-blur-md lg:backdrop-blur-none lg:rounded-lg p-3 lg:p-6">
           <div className="hidden lg:block mb-4">
-            <h2 className="font-semibold">{formType === "create" ? "Publikasikan" : "Simpan Perubahan"}</h2>
+            <h2 className="text-sm font-semibold">{formType === "create" ? "Publikasikan" : "Simpan Perubahan"}</h2>
             <p className="text-sm text-muted mt-0.5">
               {formType === "create"
                 ? "Periksa kembali detail sebelum dipublikasikan ke portfolio."
@@ -405,14 +405,14 @@ export default function FormProject({ formType, initialValues, onSubmit, footer 
             <button
               type="submit"
               disabled={submitting}
-              className="flex-1 lg:flex-none h-11 rounded-xl bg-primary text-white dark:text-slate-950 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-primary-hover transition shadow-sm shadow-indigo-500/20 disabled:opacity-70"
+              className="flex-1 lg:flex-none h-10 rounded-md bg-primary text-background text-sm font-medium flex items-center justify-center gap-2 hover:bg-primary-hover transition disabled:opacity-70"
             >
               {submitting ? <Spinner className="w-4 h-4" /> : <FiSave />}
               {submitting ? "Menyimpan..." : formType === "create" ? "Buat Project" : "Simpan Perubahan"}
             </button>
             <Link
               href="/project"
-              className="flex-1 lg:flex-none h-11 rounded-xl border border-line text-sm font-semibold flex items-center justify-center hover:bg-surface-muted transition"
+              className="flex-1 lg:flex-none h-10 rounded-md border border-line text-sm font-medium flex items-center justify-center hover:bg-surface-muted transition"
             >
               Batal
             </Link>

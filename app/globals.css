@@ -3,36 +3,38 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #f6f7fb;
+  --background: #fafafa;
   --surface: #ffffff;
-  --surface-muted: #f1f3f9;
-  --line: #e4e7ef;
-  --foreground: #0f172a;
-  --muted: #64748b;
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
-  --primary-soft: #eef2ff;
-  --danger: #e11d48;
-  --danger-soft: #fff1f2;
-  --success: #059669;
-  --success-soft: #ecfdf5;
+  --surface-muted: #f4f4f5;
+  --line: #e4e4e7;
+  --foreground: #18181b;
+  --muted: #71717a;
+  --primary: #18181b;
+  --primary-hover: #3f3f46;
+  --primary-soft: #f4f4f5;
+  --accent: #c2410c;
+  --danger: #dc2626;
+  --danger-soft: #fef2f2;
+  --success: #15803d;
+  --success-soft: #f0fdf4;
   color-scheme: light;
 }
 
 .dark {
-  --background: #0b0f1a;
-  --surface: #111827;
-  --surface-muted: #1a2233;
-  --line: #243044;
-  --foreground: #e5e9f2;
-  --muted: #94a3b8;
-  --primary: #818cf8;
-  --primary-hover: #a5b4fc;
-  --primary-soft: rgba(129, 140, 248, 0.14);
-  --danger: #fb7185;
-  --danger-soft: rgba(251, 113, 133, 0.12);
-  --success: #34d399;
-  --success-soft: rgba(52, 211, 153, 0.12);
+  --background: #09090b;
+  --surface: #111113;
+  --surface-muted: #1c1c1f;
+  --line: #27272a;
+  --foreground: #fafafa;
+  --muted: #a1a1aa;
+  --primary: #fafafa;
+  --primary-hover: #d4d4d8;
+  --primary-soft: #1c1c1f;
+  --accent: #fb923c;
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.1);
+  --success: #4ade80;
+  --success-soft: rgba(74, 222, 128, 0.1);
   color-scheme: dark;
 }
 
@@ -46,6 +48,7 @@
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-soft: var(--primary-soft);
+  --color-accent: var(--accent);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-success: var(--success);
@@ -82,13 +85,6 @@
 body {
   background: var(--background);
   color: var(--foreground);
-}
-
-.bg-grid {
-  background-size: 36px 36px;
-  background-image:
-    linear-gradient(to right, var(--line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--line) 1px, transparent 1px);
 }
 
 .scrollbar-none {

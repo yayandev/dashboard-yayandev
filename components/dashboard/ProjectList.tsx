@@ -137,7 +137,7 @@ export default function ProjectList() {
           <button
             onClick={refetch}
             disabled={loading}
-            className="h-10 px-3.5 rounded-xl border border-line bg-surface text-sm font-medium flex items-center gap-2 hover:bg-surface-muted transition disabled:opacity-60"
+            className="h-8 px-2.5 rounded-md border border-line bg-surface text-sm flex items-center gap-2 text-muted hover:text-foreground transition disabled:opacity-60"
             aria-label="Muat ulang"
           >
             <FiRefreshCw className={loading ? "animate-spin" : ""} />
@@ -147,9 +147,9 @@ export default function ProjectList() {
       />
 
       {/* Toolbar */}
-      <div className="rounded-2xl border border-line bg-surface p-3 md:p-4 mb-4 space-y-3 animate-fade-in">
+      <div className="mb-5 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-sm text-muted mr-auto">
+          <p className="basis-full sm:basis-auto sm:mr-auto text-sm text-muted">
             {loading ? (
               "Memuat project..."
             ) : (
@@ -163,7 +163,7 @@ export default function ProjectList() {
           <select
             value={sort}
             onChange={(e) => setParam("sort", e.target.value === "newest" ? "" : e.target.value)}
-            className="h-9 pl-3 pr-8 rounded-lg border border-line bg-surface text-sm outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
+            className="flex-1 sm:flex-none h-8 pl-2.5 pr-7 rounded-md border border-line bg-surface text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
             aria-label="Urutkan"
           >
             {(Object.keys(sortLabels) as Sort[]).map((s) => (
@@ -173,7 +173,7 @@ export default function ProjectList() {
             ))}
           </select>
 
-          <div className="flex rounded-lg border border-line p-0.5 bg-surface-muted">
+          <div className="flex rounded-md border border-line p-0.5 bg-surface">
             {(
               [
                 ["grid", FiGrid, "Tampilan grid"],
@@ -185,8 +185,8 @@ export default function ProjectList() {
                 onClick={() => saveView(v)}
                 aria-label={label}
                 aria-pressed={view === v}
-                className={`w-8 h-8 rounded-md flex items-center justify-center transition ${
-                  view === v ? "bg-surface shadow-sm text-primary" : "text-muted hover:text-foreground"
+                className={`w-7 h-6 rounded flex items-center justify-center transition ${
+                  view === v ? "bg-surface-muted text-foreground" : "text-muted hover:text-foreground"
                 }`}
               >
                 <Icon />
@@ -199,10 +199,10 @@ export default function ProjectList() {
           <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-1 px-1 pb-0.5">
             <button
               onClick={() => setParam("tech", "")}
-              className={`shrink-0 h-8 px-3 rounded-full text-xs font-medium border transition ${
+              className={`shrink-0 h-7 px-2.5 rounded-md text-xs border transition ${
                 !tech
-                  ? "bg-primary text-white dark:text-slate-950 border-primary"
-                  : "border-line text-muted hover:text-foreground hover:bg-surface-muted"
+                  ? "bg-primary text-background border-primary font-medium"
+                  : "border-line bg-surface text-muted hover:text-foreground"
               }`}
             >
               Semua
@@ -213,10 +213,10 @@ export default function ProjectList() {
                 <button
                   key={t}
                   onClick={() => setParam("tech", active ? "" : t)}
-                  className={`shrink-0 h-8 px-3 rounded-full text-xs font-medium border transition ${
+                  className={`shrink-0 h-7 px-2.5 rounded-md text-xs border transition ${
                     active
-                      ? "bg-primary text-white dark:text-slate-950 border-primary"
-                      : "border-line text-muted hover:text-foreground hover:bg-surface-muted"
+                      ? "bg-primary text-background border-primary font-medium"
+                      : "border-line bg-surface text-muted hover:text-foreground"
                   }`}
                 >
                   {t}
@@ -229,9 +229,9 @@ export default function ProjectList() {
         {hasFilter && (
           <div className="flex flex-wrap items-center gap-2 text-xs">
             {q && (
-              <span className="inline-flex items-center gap-1.5 h-7 pl-2.5 pr-1.5 rounded-full bg-primary-soft text-primary font-medium">
+              <span className="inline-flex items-center gap-1.5 h-6 pl-2 pr-1 rounded-md border border-line bg-surface font-mono">
                 <FiSearch /> &ldquo;{q}&rdquo;
-                <button onClick={() => setParam("q", "")} aria-label="Hapus kata kunci" className="p-0.5 rounded-full hover:bg-primary/15">
+                <button onClick={() => setParam("q", "")} aria-label="Hapus kata kunci" className="p-0.5 rounded hover:bg-surface-muted">
                   <FiX />
                 </button>
               </span>
@@ -250,7 +250,7 @@ export default function ProjectList() {
       {loading ? (
         <SkeletonGrid />
       ) : error ? (
-        <div className="rounded-2xl border border-line bg-surface">
+        <div className="rounded-lg border border-line bg-surface">
           <EmptyState
             tone="danger"
             icon={<FiAlertCircle />}
@@ -259,7 +259,7 @@ export default function ProjectList() {
             action={
               <button
                 onClick={refetch}
-                className="h-10 px-4 rounded-xl border border-line text-sm font-medium inline-flex items-center gap-2 hover:bg-surface-muted"
+                className="h-8 px-3 rounded-md border border-line text-sm font-medium inline-flex items-center gap-2 hover:bg-surface-muted"
               >
                 <FiRefreshCw /> Coba lagi
               </button>
@@ -267,7 +267,7 @@ export default function ProjectList() {
           />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-2xl border border-line bg-surface">
+        <div className="rounded-lg border border-line bg-surface">
           {hasFilter ? (
             <EmptyState
               icon={<FiSearch />}
@@ -276,7 +276,7 @@ export default function ProjectList() {
               action={
                 <button
                   onClick={() => router.replace(pathname)}
-                  className="h-10 px-4 rounded-xl border border-line text-sm font-medium hover:bg-surface-muted"
+                  className="h-8 px-3 rounded-md border border-line text-sm font-medium hover:bg-surface-muted"
                 >
                   Reset filter
                 </button>
@@ -290,7 +290,7 @@ export default function ProjectList() {
               action={
                 <Link
                   href="/create-project"
-                  className="h-10 px-4 rounded-xl bg-primary text-white dark:text-slate-950 text-sm font-semibold inline-flex items-center gap-2 hover:bg-primary-hover"
+                  className="h-8 px-3 rounded-md bg-primary text-background text-sm font-semibold inline-flex items-center gap-2 hover:bg-primary-hover"
                 >
                   <FiPlus /> Tambah Project
                 </Link>
@@ -333,7 +333,7 @@ function LinkButtons({ project }: { project: Project }) {
           href={project.github_url}
           target="_blank"
           rel="noreferrer"
-          className="w-9 h-9 rounded-lg flex items-center justify-center text-muted hover:text-foreground hover:bg-surface-muted transition"
+          className="w-8 h-8 rounded-md flex items-center justify-center text-muted hover:text-foreground hover:bg-surface-muted transition"
           aria-label="Buka repository GitHub"
           title="GitHub"
         >
@@ -345,7 +345,7 @@ function LinkButtons({ project }: { project: Project }) {
           href={project.demo_url}
           target="_blank"
           rel="noreferrer"
-          className="w-9 h-9 rounded-lg flex items-center justify-center text-muted hover:text-foreground hover:bg-surface-muted transition"
+          className="w-8 h-8 rounded-md flex items-center justify-center text-muted hover:text-foreground hover:bg-surface-muted transition"
           aria-label="Buka live demo"
           title="Live demo"
         >
@@ -361,7 +361,7 @@ function ActionButtons({ project, onDelete }: { project: Project; onDelete: () =
     <>
       <Link
         href={`/project/${project.id}`}
-        className="w-9 h-9 rounded-lg flex items-center justify-center text-muted hover:text-primary hover:bg-primary-soft transition"
+        className="w-8 h-8 rounded-md flex items-center justify-center text-muted hover:text-foreground hover:bg-surface-muted transition"
         aria-label={`Edit ${project.title}`}
         title="Edit"
       >
@@ -369,7 +369,7 @@ function ActionButtons({ project, onDelete }: { project: Project; onDelete: () =
       </Link>
       <button
         onClick={onDelete}
-        className="w-9 h-9 rounded-lg flex items-center justify-center text-muted hover:text-danger hover:bg-danger-soft transition"
+        className="w-8 h-8 rounded-md flex items-center justify-center text-muted hover:text-danger hover:bg-danger-soft transition"
         aria-label={`Hapus ${project.title}`}
         title="Hapus"
       >
@@ -383,29 +383,26 @@ function ProjectCard({ project, index, onDelete }: { project: Project; index: nu
   return (
     <article
       style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
-      className="group flex flex-col rounded-2xl border border-line bg-surface overflow-hidden hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-0.5 hover:border-primary/40 transition-all duration-300 animate-fade-in"
+      className="group flex flex-col rounded-lg border border-line bg-surface overflow-hidden hover:border-muted/40 transition-colors animate-fade-in"
     >
-      <Link href={`/project/${project.id}`} className="relative block aspect-[16/9] overflow-hidden bg-surface-muted">
+      <Link href={`/project/${project.id}`} className="relative block aspect-[16/10] overflow-hidden bg-surface-muted border-b border-line">
         <ProjectImage
           src={project.image_url}
           alt={project.title}
-          className="w-full h-full group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full"
         />
-        <span className="absolute top-3 left-3 text-[11px] font-medium px-2 py-1 rounded-md bg-slate-950/60 text-white backdrop-blur-sm">
-          {formatDate(project.created_at)}
-        </span>
       </Link>
 
       <div className="flex-1 flex flex-col p-4">
         <Link href={`/project/${project.id}`}>
-          <h3 className="font-semibold leading-snug line-clamp-1 group-hover:text-primary transition-colors">
+          <h3 className="text-[15px] font-medium leading-snug line-clamp-1 hover:underline underline-offset-2">
             {project.title}
           </h3>
         </Link>
-        <p className="text-sm text-muted mt-1.5 line-clamp-2 flex-1">{project.description || "Tanpa deskripsi"}</p>
+        <p className="text-sm text-muted mt-1 line-clamp-2 flex-1">{project.description || "Tanpa deskripsi"}</p>
 
         {project.tech_stack.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-3">
+          <div className="flex flex-wrap gap-1 mt-3">
             {project.tech_stack.slice(0, 4).map((t) => (
               <TechBadge key={t} name={t} />
             ))}
@@ -415,9 +412,10 @@ function ProjectCard({ project, index, onDelete }: { project: Project; index: nu
           </div>
         )}
 
-        <div className="flex items-center gap-1 mt-4 pt-3 border-t border-line -mx-1">
-          <LinkButtons project={project} />
-          <div className="ml-auto flex items-center gap-1">
+        <div className="flex items-center gap-0.5 mt-4 -mx-1.5 -mb-1.5">
+          <span className="px-1.5 font-mono text-xs text-muted">{formatDate(project.created_at)}</span>
+          <div className="ml-auto flex items-center">
+            <LinkButtons project={project} />
             <ActionButtons project={project} onDelete={onDelete} />
           </div>
         </div>
@@ -428,12 +426,12 @@ function ProjectCard({ project, index, onDelete }: { project: Project; index: nu
 
 function ProjectTable({ projects, onDelete }: { projects: Project[]; onDelete: (p: Project) => void }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface overflow-hidden animate-fade-in">
+    <div className="rounded-lg border border-line bg-surface overflow-hidden animate-fade-in">
       {/* Mobile: compact list */}
       <ul className="md:hidden divide-y divide-line">
         {projects.map((p) => (
           <li key={p.id} className="flex items-center gap-3 p-3">
-            <ProjectImage src={p.image_url} alt={p.title} className="w-16 h-12 rounded-lg border border-line shrink-0" />
+            <ProjectImage src={p.image_url} alt={p.title} className="w-16 h-12 rounded border border-line shrink-0" />
             <div className="min-w-0 flex-1">
               <Link href={`/project/${p.id}`} className="text-sm font-medium line-clamp-1">
                 {p.title}
@@ -451,11 +449,11 @@ function ProjectTable({ projects, onDelete }: { projects: Project[]; onDelete: (
       <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-line bg-surface-muted/60 text-xs uppercase tracking-wider text-muted">
-              <th className="py-3 px-4 font-semibold">Project</th>
-              <th className="py-3 px-4 font-semibold">Tech Stack</th>
-              <th className="py-3 px-4 font-semibold whitespace-nowrap">Tanggal</th>
-              <th className="py-3 px-4 font-semibold text-right">Aksi</th>
+            <tr className="border-b border-line text-xs text-muted">
+              <th className="py-2.5 px-4 font-medium">Project</th>
+              <th className="py-2.5 px-4 font-medium">Tech Stack</th>
+              <th className="py-2.5 px-4 font-medium whitespace-nowrap">Tanggal</th>
+              <th className="py-2.5 px-4 font-medium text-right">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -466,10 +464,10 @@ function ProjectTable({ projects, onDelete }: { projects: Project[]; onDelete: (
                     <ProjectImage
                       src={p.image_url}
                       alt={p.title}
-                      className="w-16 h-11 rounded-lg border border-line shrink-0"
+                      className="w-16 h-11 rounded border border-line shrink-0"
                     />
                     <div className="min-w-0">
-                      <Link href={`/project/${p.id}`} className="font-medium hover:text-primary line-clamp-1">
+                      <Link href={`/project/${p.id}`} className="font-medium hover:underline underline-offset-2 line-clamp-1">
                         {p.title}
                       </Link>
                       <p className="text-xs text-muted line-clamp-1 mt-0.5 max-w-xs">{p.description}</p>
@@ -486,7 +484,7 @@ function ProjectTable({ projects, onDelete }: { projects: Project[]; onDelete: (
                     )}
                   </div>
                 </td>
-                <td className="py-3 px-4 text-muted whitespace-nowrap">{formatDate(p.created_at)}</td>
+                <td className="py-3 px-4 text-muted font-mono text-xs whitespace-nowrap">{formatDate(p.created_at)}</td>
                 <td className="py-3 px-4">
                   <div className="flex items-center justify-end">
                     <LinkButtons project={p} />
@@ -506,7 +504,7 @@ function SkeletonGrid() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="rounded-2xl border border-line bg-surface overflow-hidden">
+        <div key={i} className="rounded-lg border border-line bg-surface overflow-hidden">
           <div className="aspect-[16/9] bg-surface-muted animate-pulse" />
           <div className="p-4 space-y-3">
             <div className="h-4 w-2/3 rounded bg-surface-muted animate-pulse" />

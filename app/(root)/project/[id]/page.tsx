@@ -73,7 +73,7 @@ export default function EditProjectPage() {
       />
 
       {error ? (
-        <div className="rounded-2xl border border-line bg-surface">
+        <div className="rounded-lg border border-line bg-surface">
           <EmptyState
             tone="danger"
             icon={<FiAlertCircle />}
@@ -82,7 +82,7 @@ export default function EditProjectPage() {
             action={
               <Link
                 href="/project"
-                className="h-10 px-4 rounded-xl border border-line text-sm font-medium inline-flex items-center gap-2 hover:bg-surface-muted"
+                className="h-8 px-3 rounded-md border border-line text-sm font-medium inline-flex items-center gap-2 hover:bg-surface-muted"
               >
                 <FiArrowLeft /> Kembali ke Projects
               </Link>
@@ -104,13 +104,13 @@ export default function EditProjectPage() {
           }}
           onSubmit={handleSubmit}
           footer={
-            <section className="rounded-2xl border border-danger/30 bg-surface p-5 md:p-6">
-              <h2 className="font-semibold text-danger">Zona Berbahaya</h2>
+            <section className="rounded-lg border border-danger/30 bg-surface p-5">
+              <h2 className="text-sm font-semibold text-danger">Zona Berbahaya</h2>
               <p className="text-sm text-muted mt-0.5 mb-4">Menghapus project bersifat permanen.</p>
               <button
                 type="button"
                 onClick={() => setConfirmDelete(true)}
-                className="w-full h-10 rounded-xl border border-danger/40 text-danger text-sm font-semibold flex items-center justify-center gap-2 hover:bg-danger-soft transition"
+                className="w-full h-9 rounded-md border border-danger/40 text-danger text-sm font-medium flex items-center justify-center gap-2 hover:bg-danger-soft transition"
               >
                 <FiTrash2 /> Hapus Project
               </button>
@@ -141,25 +141,25 @@ function FormSkeleton() {
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <div className="lg:col-span-8 space-y-6">
         {[3, 3].map((rows, i) => (
-          <div key={i} className="rounded-2xl border border-line bg-surface p-6 space-y-5">
+          <div key={i} className="rounded-lg border border-line bg-surface p-6 space-y-5">
             <div className="h-4 w-40 rounded bg-surface-muted animate-pulse" />
             {Array.from({ length: rows }).map((_, j) => (
               <div key={j} className="space-y-2">
                 <div className="h-3 w-24 rounded bg-surface-muted animate-pulse" />
-                <div className="h-11 rounded-xl bg-surface-muted animate-pulse" />
+                <div className="h-11 rounded-md bg-surface-muted animate-pulse" />
               </div>
             ))}
           </div>
         ))}
       </div>
       <div className="lg:col-span-4 space-y-6">
-        <div className="rounded-2xl border border-line bg-surface p-6 space-y-4">
+        <div className="rounded-lg border border-line bg-surface p-6 space-y-4">
           <div className="h-4 w-32 rounded bg-surface-muted animate-pulse" />
-          <div className="aspect-[16/10] rounded-xl bg-surface-muted animate-pulse" />
+          <div className="aspect-[16/10] rounded-md bg-surface-muted animate-pulse" />
         </div>
-        <div className="rounded-2xl border border-line bg-surface p-6 space-y-3">
-          <div className="h-11 rounded-xl bg-surface-muted animate-pulse" />
-          <div className="h-11 rounded-xl bg-surface-muted animate-pulse" />
+        <div className="rounded-lg border border-line bg-surface p-6 space-y-3">
+          <div className="h-11 rounded-md bg-surface-muted animate-pulse" />
+          <div className="h-11 rounded-md bg-surface-muted animate-pulse" />
         </div>
       </div>
     </div>

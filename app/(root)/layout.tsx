@@ -11,12 +11,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="min-h-dvh">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="lg:pl-[272px] min-h-dvh flex flex-col">
-        <Suspense fallback={<div className="h-16 border-b border-line bg-surface/80" />}>
+      <div className="lg:pl-[240px] min-h-dvh flex flex-col">
+        <Suspense fallback={<div className="h-14 border-b border-line bg-surface/80" />}>
           <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
         </Suspense>
 
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">{children}</main>
+        <main className="flex-1 w-full max-w-6xl mx-auto px-4 md:px-8 py-6 md:py-10">{children}</main>
       </div>
     </div>
   );

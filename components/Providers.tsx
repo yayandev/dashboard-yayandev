@@ -51,7 +51,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         newestOnTop
         pauseOnHover
         theme={theme}
-        toastClassName="!rounded-xl !text-sm"
+        toastClassName="!rounded-md !text-sm"
       />
     </ThemeContext.Provider>
   );

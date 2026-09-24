@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FiMenu, FiMoon, FiPlus, FiSearch, FiSun, FiX } from "react-icons/fi";
 import { useTheme } from "@/components/Providers";
 
@@ -26,6 +26,22 @@ export default function Topbar({ onOpenSidebar }: Props) {
     setValue(q);
   }
 
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // "/" or Ctrl/Cmd+K focuses search.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const typing = target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
+      if ((e.key === "/" && !typing) || (e.key.toLowerCase() === "k" && (e.metaKey || e.ctrlKey))) {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const onProjectList = pathname === "/project";
 
   const applySearch = (text: string, replace: boolean) => {
@@ -38,7 +54,7 @@ export default function Topbar({ onOpenSidebar }: Props) {
   };
 
   return (
-    <header className="sticky top-0 z-30 h-16 bg-surface/80 backdrop-blur-md border-b border-line px-4 md:px-6 flex items-center gap-3">
+    <header className="sticky top-0 z-30 h-14 bg-background/90 backdrop-blur border-b border-line px-4 md:px-6 flex items-center gap-3">
       <button
         onClick={onOpenSidebar}
         className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-surface-muted"
@@ -55,8 +71,9 @@ export default function Topbar({ onOpenSidebar }: Props) {
           applySearch(value, onProjectList);
         }}
       >
-        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm pointer-events-none" />
         <input
+          ref={inputRef}
           type="search"
           value={value}
           onChange={(e) => {
@@ -66,8 +83,13 @@ export default function Topbar({ onOpenSidebar }: Props) {
           }}
           placeholder="Cari project atau teknologi..."
           aria-label="Cari project"
-          className="w-full h-10 pl-10 pr-9 bg-surface-muted border border-transparent rounded-xl text-sm outline-none placeholder:text-muted focus:bg-surface focus:border-primary focus:ring-4 focus:ring-primary/15 transition [&::-webkit-search-cancel-button]:hidden"
+          className="w-full h-9 pl-9 pr-12 bg-surface border border-line rounded-md text-sm outline-none placeholder:text-muted focus:bg-surface focus:border-primary focus:ring-2 focus:ring-primary/10 transition [&::-webkit-search-cancel-button]:hidden"
         />
+        {!value && (
+          <kbd className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 h-5 px-1.5 items-center rounded border border-line font-mono text-[10px] text-muted pointer-events-none">
+            /
+          </kbd>
+        )}
         {value && (
           <button
             type="button"
@@ -86,20 +108,20 @@ export default function Topbar({ onOpenSidebar }: Props) {
       <div className="ml-auto flex items-center gap-2">
         <button
           onClick={toggleTheme}
-          className="hidden sm:flex w-10 h-10 items-center justify-center rounded-xl text-muted hover:bg-surface-muted hover:text-foreground transition"
+          className="hidden sm:flex w-9 h-9 items-center justify-center rounded-md text-muted hover:bg-surface-muted hover:text-foreground transition"
           aria-label="Ganti tema"
           title={theme === "dark" ? "Mode terang" : "Mode gelap"}
         >
-          {theme === "dark" ? <FiSun className="text-lg" /> : <FiMoon className="text-lg" />}
+          {theme === "dark" ? <FiSun /> : <FiMoon />}
         </button>
 
         <Link
           href="/create-project"
-          className="h-10 w-10 sm:w-auto sm:px-4 bg-primary text-white dark:text-slate-950 rounded-xl text-sm font-semibold hover:bg-primary-hover transition flex items-center justify-center gap-2 shadow-sm shadow-indigo-500/20"
+          className="h-9 w-9 sm:w-auto sm:px-3 bg-primary text-background rounded-md text-sm font-medium hover:bg-primary-hover transition flex items-center justify-center gap-2"
           aria-label="Tambah project"
         >
-          <FiPlus className="text-lg" />
-          <span className="hidden sm:inline">Tambah Project</span>
+          <FiPlus />
+          <span className="hidden sm:inline">Project Baru</span>
         </Link>
       </div>
     </header>

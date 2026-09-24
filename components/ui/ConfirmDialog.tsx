@@ -47,16 +47,16 @@ export default function ConfirmDialog({
       aria-labelledby="confirm-title"
     >
       <div
-        className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm animate-fade-in"
+        className="absolute inset-0 bg-black/40 animate-fade-in"
         onClick={() => !loading && onClose()}
       />
-      <div className="relative w-full max-w-md bg-surface border border-line rounded-2xl shadow-2xl p-6 animate-scale-in">
+      <div className="relative w-full max-w-md bg-surface border border-line rounded-lg shadow-xl p-5 animate-scale-in">
         <div className="flex gap-4">
-          <div className="shrink-0 w-11 h-11 rounded-full bg-danger-soft text-danger flex items-center justify-center">
-            <FiAlertTriangle className="text-xl" />
+          <div className="shrink-0 w-9 h-9 rounded-md bg-danger-soft text-danger flex items-center justify-center">
+            <FiAlertTriangle />
           </div>
           <div className="min-w-0">
-            <h2 id="confirm-title" className="text-lg font-semibold">
+            <h2 id="confirm-title" className="font-semibold">
               {title}
             </h2>
             <div className="text-sm text-muted mt-1 break-words">{description}</div>

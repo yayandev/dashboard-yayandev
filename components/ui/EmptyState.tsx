@@ -10,8 +10,8 @@ export default function EmptyState({ icon, title, description, action, tone = "d
   return (
     <div className="flex flex-col items-center justify-center text-center py-14 px-6">
       <div
-        className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-4 ${
-          tone === "danger" ? "bg-danger-soft text-danger" : "bg-primary-soft text-primary"
+        className={`w-10 h-10 rounded-md border border-line flex items-center justify-center text-lg mb-4 ${
+          tone === "danger" ? "bg-danger-soft text-danger border-danger/30" : "bg-surface-muted text-muted"
         }`}
       >
         {icon}
