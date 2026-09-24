@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { FiAlertTriangle } from "react-icons/fi";
+import { button } from "@/lib/ui";
 import Spinner from "./Spinner";
 
 interface Props {
@@ -9,6 +9,8 @@ interface Props {
   title: string;
   description: React.ReactNode;
   confirmLabel?: string;
+  loadingLabel?: string;
+  tone?: "danger" | "default";
   loading?: boolean;
   onConfirm: () => void;
   onClose: () => void;
@@ -19,6 +21,8 @@ export default function ConfirmDialog({
   title,
   description,
   confirmLabel = "Hapus",
+  loadingLabel = "Menghapus...",
+  tone = "danger",
   loading = false,
   onConfirm,
   onClose,
@@ -42,45 +46,35 @@ export default function ConfirmDialog({
   return (
     <div
       className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4"
-      role="dialog"
+      role="alertdialog"
       aria-modal="true"
       aria-labelledby="confirm-title"
+      aria-describedby="confirm-desc"
     >
-      <div
-        className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm animate-fade-in"
-        onClick={() => !loading && onClose()}
-      />
-      <div className="relative w-full max-w-md bg-surface border border-line rounded-2xl shadow-2xl p-6 animate-scale-in">
-        <div className="flex gap-4">
-          <div className="shrink-0 w-11 h-11 rounded-full bg-danger-soft text-danger flex items-center justify-center">
-            <FiAlertTriangle className="text-xl" />
-          </div>
-          <div className="min-w-0">
-            <h2 id="confirm-title" className="text-lg font-semibold">
-              {title}
-            </h2>
-            <div className="text-sm text-muted mt-1 break-words">{description}</div>
+      <div className="absolute inset-0 bg-black/40 animate-overlay-in" onClick={() => !loading && onClose()} />
+      <div className="relative w-full max-w-sm bg-surface border border-line rounded-lg shadow-pop animate-pop-in">
+        <div className="p-5">
+          <h2 id="confirm-title" className="font-semibold">
+            {title}
+          </h2>
+          <div id="confirm-desc" className="text-sm text-muted mt-1.5 break-words">
+            {description}
           </div>
         </div>
 
-        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-6">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={loading}
-            className="h-10 px-4 rounded-lg border border-line text-sm font-medium hover:bg-surface-muted transition disabled:opacity-50"
-          >
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 px-5 py-3 border-t border-line bg-surface-muted/50 rounded-b-lg">
+          {/* Cancel gets focus so a stray Enter never confirms a destructive action. */}
+          <button type="button" onClick={onClose} disabled={loading} autoFocus className={button("secondary", "sm")}>
             Batal
           </button>
           <button
             type="button"
             onClick={onConfirm}
             disabled={loading}
-            autoFocus
-            className="h-10 px-4 rounded-lg bg-danger text-white text-sm font-semibold hover:opacity-90 transition flex items-center justify-center gap-2 disabled:opacity-70"
+            className={button(tone === "danger" ? "danger" : "primary", "sm")}
           >
-            {loading && <Spinner className="w-4 h-4" />}
-            {loading ? "Menghapus..." : confirmLabel}
+            {loading && <Spinner className="w-3.5 h-3.5" />}
+            {loading ? loadingLabel : confirmLabel}
           </button>
         </div>
       </div>

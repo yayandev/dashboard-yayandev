@@ -25,8 +25,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f7fb" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b0f1a" },
+    { media: "(prefers-color-scheme: light)", color: "#fafaf9" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e0e0d" },
   ],
 };
 
@@ -48,7 +48,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-full font-sans">
-        <NextTopLoader color="#6366f1" height={3} showSpinner={false} shadow="0 0 10px #6366f1,0 0 5px #6366f1" />
+        <NextTopLoader color="var(--accent)" height={2} showSpinner={false} shadow={false} />
         <Providers>{children}</Providers>
       </body>
     </html>

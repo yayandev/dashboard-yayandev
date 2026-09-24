@@ -97,3 +97,34 @@ export function formatDate(value?: string | null, style: "short" | "long" = "sho
     year: "numeric",
   });
 }
+
+const relative = new Intl.RelativeTimeFormat("id-ID", { numeric: "auto" });
+
+export function timeAgo(value?: string | null) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  const seconds = (date.getTime() - Date.now()) / 1000;
+  const units: [Intl.RelativeTimeFormatUnit, number][] = [
+    ["year", 31536000],
+    ["month", 2592000],
+    ["week", 604800],
+    ["day", 86400],
+    ["hour", 3600],
+    ["minute", 60],
+  ];
+  for (const [unit, size] of units) {
+    if (Math.abs(seconds) >= size) return relative.format(Math.round(seconds / size), unit);
+  }
+  return "baru saja";
+}
+
+/** Fields that make a portfolio card look unfinished when empty. */
+export function missingFields(p: Project) {
+  const missing: string[] = [];
+  if (!p.image_url) missing.push("gambar");
+  if (!p.demo_url) missing.push("demo");
+  if (!p.github_url) missing.push("repo");
+  if (!p.tech_stack.length) missing.push("tech stack");
+  return missing;
+}

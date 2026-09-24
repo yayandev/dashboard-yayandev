@@ -1,12 +1,15 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { FiExternalLink, FiGithub, FiImage, FiSave, FiTrash2, FiUploadCloud, FiX } from "react-icons/fi";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { FiExternalLink, FiGithub, FiImage, FiTrash2, FiUploadCloud, FiX } from "react-icons/fi";
 import type { ProjectInput } from "@/lib/projects";
+import { button, input, panel } from "@/lib/ui";
 import ProjectImage from "@/components/ui/ProjectImage";
 import TechBadge from "@/components/ui/TechBadge";
 import Spinner from "@/components/ui/Spinner";
+import Kbd from "@/components/ui/Kbd";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_DESCRIPTION = 500;
@@ -15,6 +18,8 @@ interface Props {
   formType: "create" | "edit";
   initialValues?: Partial<ProjectInput>;
   onSubmit: (values: ProjectInput) => Promise<void>;
+  /** Existing tech names, offered as autocomplete so casing stays consistent. */
+  techSuggestions?: string[];
   footer?: React.ReactNode;
 }
 
@@ -30,56 +35,86 @@ function isValidUrl(value: string) {
   }
 }
 
-const inputClass = (hasError?: boolean) =>
-  `w-full h-11 px-3.5 rounded-xl border bg-surface text-[15px] outline-none placeholder:text-muted/70 transition focus:ring-4 ${
-    hasError
-      ? "border-danger focus:ring-danger/15"
-      : "border-line focus:border-primary focus:ring-primary/15"
-  }`;
+const noop = () => () => {};
+function useIsMac() {
+  return useSyncExternalStore(
+    noop,
+    () => /mac|iphone|ipad/i.test(navigator.userAgent),
+    () => false
+  );
+}
 
 function Field({
   label,
   htmlFor,
   error,
   hint,
-  required,
+  optional,
   children,
 }: {
   label: string;
   htmlFor: string;
   error?: string;
   hint?: React.ReactNode;
-  required?: boolean;
+  optional?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={htmlFor} className="block text-sm font-medium">
-        {label} {required && <span className="text-danger">*</span>}
+      <label htmlFor={htmlFor} className="flex items-baseline gap-1.5 text-[13px] font-medium">
+        {label}
+        {optional && <span className="text-xs font-normal text-subtle">opsional</span>}
       </label>
       {children}
       {error ? (
-        <p className="text-xs text-danger">{error}</p>
+        <p id={`${htmlFor}-error`} className="text-xs text-danger">
+          {error}
+        </p>
       ) : hint ? (
-        <p className="text-xs text-muted">{hint}</p>
+        <div className="text-xs text-subtle">{hint}</div>
       ) : null}
     </div>
   );
 }
 
-export default function FormProject({ formType, initialValues, onSubmit, footer }: Props) {
-  const [title, setTitle] = useState(initialValues?.title ?? "");
-  const [description, setDescription] = useState(initialValues?.description ?? "");
-  const [githubUrl, setGithubUrl] = useState(initialValues?.githubUrl ?? "");
-  const [demoUrl, setDemoUrl] = useState(initialValues?.demoUrl ?? "");
-  const [techStack, setTechStack] = useState<string[]>(initialValues?.techStack ?? []);
+function Section({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+  return (
+    <section className="grid grid-cols-1 md:grid-cols-[200px_minmax(0,1fr)] gap-x-8 gap-y-4 p-5 md:p-6">
+      <div>
+        <h2 className="text-sm font-medium">{title}</h2>
+        <p className="text-[13px] text-muted mt-1">{description}</p>
+      </div>
+      <div className="space-y-5">{children}</div>
+    </section>
+  );
+}
+
+export default function FormProject({ formType, initialValues, onSubmit, techSuggestions = [], footer }: Props) {
+  const router = useRouter();
+  const isMac = useIsMac();
+  const [initial] = useState(() => ({
+    title: initialValues?.title ?? "",
+    description: initialValues?.description ?? "",
+    githubUrl: initialValues?.githubUrl ?? "",
+    demoUrl: initialValues?.demoUrl ?? "",
+    techStack: initialValues?.techStack ?? [],
+    imageUrl: initialValues?.imageUrl ?? null,
+  }));
+
+  const [title, setTitle] = useState(initial.title);
+  const [description, setDescription] = useState(initial.description);
+  const [githubUrl, setGithubUrl] = useState(initial.githubUrl);
+  const [demoUrl, setDemoUrl] = useState(initial.demoUrl);
+  const [techStack, setTechStack] = useState<string[]>(initial.techStack);
   const [techInput, setTechInput] = useState("");
   const [image, setImage] = useState<File | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(initialValues?.imageUrl ?? null);
+  const [imageUrl, setImageUrl] = useState<string | null>(initial.imageUrl);
   const [errors, setErrors] = useState<Errors>({});
   const [dragging, setDragging] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const localPreview = useMemo(() => (image ? URL.createObjectURL(image) : null), [image]);
   useEffect(() => {
@@ -89,11 +124,36 @@ export default function FormProject({ formType, initialValues, onSubmit, footer 
   }, [localPreview]);
   const preview = localPreview ?? imageUrl;
 
+  const dirty =
+    title !== initial.title ||
+    description !== initial.description ||
+    githubUrl !== initial.githubUrl ||
+    demoUrl !== initial.demoUrl ||
+    techStack.join("\n") !== initial.techStack.join("\n") ||
+    Boolean(techInput.trim()) ||
+    image !== null ||
+    imageUrl !== initial.imageUrl;
+
+  // Warn before closing the tab with unsaved edits.
+  useEffect(() => {
+    if (!dirty || submitting) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [dirty, submitting]);
+
+  const suggestions = useMemo(
+    () => techSuggestions.filter((s) => !techStack.some((t) => t.toLowerCase() === s.toLowerCase())),
+    [techSuggestions, techStack]
+  );
+
   const addTech = (raw: string) => {
     const items = raw
       .split(",")
       .map((t) => t.trim())
-      .filter(Boolean);
+      .filter(Boolean)
+      // Reuse the existing spelling when the name is already known.
+      .map((t) => techSuggestions.find((s) => s.toLowerCase() === t.toLowerCase()) ?? t);
     if (!items.length) return;
     setTechStack((prev) => {
       const next = [...prev];
@@ -121,17 +181,17 @@ export default function FormProject({ formType, initialValues, onSubmit, footer 
 
   const validate = (): Errors => {
     const next: Errors = {};
-    if (!title.trim()) next.title = "Judul project wajib diisi.";
+    if (!title.trim()) next.title = "Judul wajib diisi.";
     if (!description.trim()) next.description = "Deskripsi wajib diisi.";
-    else if (description.length > MAX_DESCRIPTION)
-      next.description = `Deskripsi maksimal ${MAX_DESCRIPTION} karakter.`;
-    if (!isValidUrl(githubUrl)) next.githubUrl = "URL tidak valid. Gunakan format https://...";
-    if (!isValidUrl(demoUrl)) next.demoUrl = "URL tidak valid. Gunakan format https://...";
+    else if (description.length > MAX_DESCRIPTION) next.description = `Maksimal ${MAX_DESCRIPTION} karakter.`;
+    if (!isValidUrl(githubUrl)) next.githubUrl = "URL tidak valid — gunakan format https://…";
+    if (!isValidUrl(demoUrl)) next.demoUrl = "URL tidak valid — gunakan format https://…";
     return next;
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (submitting) return;
     const pendingTech = techInput.trim() ? [...techStack, techInput.trim()] : techStack;
     const nextErrors = validate();
     setErrors(nextErrors);
@@ -144,283 +204,312 @@ export default function FormProject({ formType, initialValues, onSubmit, footer 
     setSubmitting(true);
     try {
       await onSubmit({ title, description, githubUrl, demoUrl, techStack: pendingTech, image, imageUrl });
-      if (formType === "create") {
-        setTechInput("");
-      }
     } finally {
       setSubmitting(false);
     }
   };
 
+  const cancel = () => {
+    if (dirty) setConfirmLeave(true);
+    else router.push("/project");
+  };
+
+  const canSubmit = formType === "create" || dirty;
+  const fieldProps = (name: keyof Errors) => ({
+    id: `field-${name}`,
+    "aria-invalid": Boolean(errors[name]) || undefined,
+    "aria-describedby": errors[name] ? `field-${name}-error` : undefined,
+  });
+
   return (
-    <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-24 lg:pb-0">
-      {/* LEFT */}
-      <div className="lg:col-span-8 space-y-6">
-        <section className="rounded-2xl border border-line bg-surface p-5 md:p-6 space-y-5 animate-fade-in">
-          <div>
-            <h2 className="font-semibold">Informasi Project</h2>
-            <p className="text-sm text-muted mt-0.5">Detail utama yang ditampilkan di portfolio.</p>
-          </div>
+    <form
+      ref={formRef}
+      onSubmit={handleSubmit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+          e.preventDefault();
+          if (canSubmit) formRef.current?.requestSubmit();
+        }
+      }}
+      noValidate
+      className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-6 items-start pb-20 lg:pb-0"
+    >
+      {/* Main */}
+      <div className="min-w-0">
+        <div className={`${panel} divide-y divide-line`}>
+          <Section title="Informasi" description="Judul dan deskripsi yang tampil di kartu portfolio.">
+            <Field label="Judul" htmlFor="field-title" error={errors.title}>
+              <input
+                {...fieldProps("title")}
+                type="text"
+                placeholder="Acme Corp Redesign"
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  if (errors.title) setErrors((x) => ({ ...x, title: undefined }));
+                }}
+                className={input(!!errors.title)}
+              />
+            </Field>
 
-          <Field label="Judul Project" htmlFor="field-title" error={errors.title} required>
-            <input
-              id="field-title"
-              type="text"
-              placeholder="cth. Acme Corp Redesign"
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                if (errors.title) setErrors((x) => ({ ...x, title: undefined }));
-              }}
-              className={inputClass(!!errors.title)}
-            />
-          </Field>
-
-          <Field
-            label="Deskripsi"
-            htmlFor="field-description"
-            error={errors.description}
-            required
-            hint={
-              <span className="flex justify-between">
-                <span>Jelaskan tujuan, fitur utama, dan hasil project.</span>
-                <span className="tabular-nums">
-                  {description.length}/{MAX_DESCRIPTION}
+            <Field
+              label="Deskripsi"
+              htmlFor="field-description"
+              error={errors.description}
+              hint={
+                <span className="flex justify-between gap-4">
+                  <span>Apa yang dibangun, untuk siapa, dan hasilnya.</span>
+                  <span
+                    className={`font-mono tabular-nums ${description.length > MAX_DESCRIPTION ? "text-danger" : ""}`}
+                  >
+                    {description.length}/{MAX_DESCRIPTION}
+                  </span>
                 </span>
-              </span>
-            }
-          >
-            <textarea
-              id="field-description"
-              rows={5}
-              placeholder="Ceritakan secara singkat tentang project ini..."
-              value={description}
-              onChange={(e) => {
-                setDescription(e.target.value);
-                if (errors.description) setErrors((x) => ({ ...x, description: undefined }));
-              }}
-              className={`${inputClass(!!errors.description)} h-auto py-2.5 resize-y min-h-[120px]`}
-            />
-          </Field>
-        </section>
+              }
+            >
+              <textarea
+                {...fieldProps("description")}
+                rows={5}
+                placeholder="Ceritakan singkat tentang project ini…"
+                value={description}
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                  if (errors.description) setErrors((x) => ({ ...x, description: undefined }));
+                }}
+                className={input(!!errors.description, "h-auto py-2 leading-relaxed resize-y min-h-[120px]")}
+              />
+            </Field>
+          </Section>
 
-        <section className="rounded-2xl border border-line bg-surface p-5 md:p-6 space-y-5 animate-fade-in">
-          <div>
-            <h2 className="font-semibold">Link & Teknologi</h2>
-            <p className="text-sm text-muted mt-0.5">Tautan repository, demo, dan stack yang digunakan.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <Field label="GitHub URL" htmlFor="field-githubUrl" error={errors.githubUrl}>
+          <Section title="Tautan" description="Repository dan halaman demo. Kosongkan jika tidak ada.">
+            <Field label="Repository GitHub" htmlFor="field-githubUrl" error={errors.githubUrl} optional>
               <div className="relative">
-                <FiGithub className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+                <FiGithub className="absolute left-3 top-1/2 -translate-y-1/2 text-subtle pointer-events-none" />
                 <input
-                  id="field-githubUrl"
+                  {...fieldProps("githubUrl")}
                   type="url"
                   inputMode="url"
-                  placeholder="https://github.com/..."
+                  placeholder="https://github.com/…"
                   value={githubUrl}
                   onChange={(e) => {
                     setGithubUrl(e.target.value);
                     if (errors.githubUrl) setErrors((x) => ({ ...x, githubUrl: undefined }));
                   }}
-                  className={`${inputClass(!!errors.githubUrl)} pl-10`}
+                  className={input(!!errors.githubUrl, "pl-9 font-mono text-[13px]")}
                 />
               </div>
             </Field>
 
-            <Field label="Live Demo URL" htmlFor="field-demoUrl" error={errors.demoUrl}>
+            <Field label="Live demo" htmlFor="field-demoUrl" error={errors.demoUrl} optional>
               <div className="relative">
-                <FiExternalLink className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+                <FiExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 text-subtle pointer-events-none" />
                 <input
-                  id="field-demoUrl"
+                  {...fieldProps("demoUrl")}
                   type="url"
                   inputMode="url"
-                  placeholder="https://..."
+                  placeholder="https://…"
                   value={demoUrl}
                   onChange={(e) => {
                     setDemoUrl(e.target.value);
                     if (errors.demoUrl) setErrors((x) => ({ ...x, demoUrl: undefined }));
                   }}
-                  className={`${inputClass(!!errors.demoUrl)} pl-10`}
+                  className={input(!!errors.demoUrl, "pl-9 font-mono text-[13px]")}
                 />
               </div>
             </Field>
-          </div>
+          </Section>
 
-          <Field
-            label="Tech Stack"
-            htmlFor="field-tech"
-            hint="Tekan Enter atau koma untuk menambahkan. Backspace untuk menghapus yang terakhir."
-          >
-            <div className="flex flex-wrap items-center gap-1.5 min-h-11 px-2.5 py-2 rounded-xl border border-line bg-surface focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/15 transition">
-              {techStack.map((t) => (
-                <TechBadge key={t} name={t} className="!text-xs !py-1">
-                  <button
-                    type="button"
-                    onClick={() => setTechStack((prev) => prev.filter((x) => x !== t))}
-                    className="-mr-0.5 rounded hover:bg-black/10 dark:hover:bg-white/10"
-                    aria-label={`Hapus ${t}`}
-                  >
-                    <FiX />
-                  </button>
-                </TechBadge>
-              ))}
-              <input
-                id="field-tech"
-                type="text"
-                value={techInput}
-                placeholder={techStack.length ? "" : "React, Tailwind CSS, Node.js"}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (v.includes(",")) addTech(v);
-                  else setTechInput(v);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addTech(techInput);
-                  } else if (e.key === "Backspace" && !techInput && techStack.length) {
-                    setTechStack((prev) => prev.slice(0, -1));
-                  }
-                }}
-                onBlur={() => addTech(techInput)}
-                className="flex-1 min-w-[140px] h-7 bg-transparent outline-none text-[15px] placeholder:text-muted/70"
-              />
-            </div>
-          </Field>
-        </section>
+          <Section title="Tech stack" description="Teknologi utama. Dipakai juga untuk filter di halaman Projects.">
+            <Field
+              label="Teknologi"
+              htmlFor="field-tech"
+              hint={
+                <>
+                  <Kbd>Enter</Kbd> atau koma untuk menambah, <Kbd>⌫</Kbd> untuk menghapus yang terakhir.
+                </>
+              }
+            >
+              <div className="flex flex-wrap items-center gap-1 min-h-9 px-1.5 py-1.5 rounded-md border border-line bg-surface hover:border-line-strong focus-within:border-accent focus-within:ring-3 focus-within:ring-accent/15 transition-[border-color,box-shadow]">
+                {techStack.map((t) => (
+                  <TechBadge key={t} name={t} className="h-6 pr-0.5 text-foreground">
+                    <button
+                      type="button"
+                      onClick={() => setTechStack((prev) => prev.filter((x) => x !== t))}
+                      className="w-4 h-4 rounded-sm flex items-center justify-center text-subtle hover:text-foreground hover:bg-line"
+                      aria-label={`Hapus ${t}`}
+                    >
+                      <FiX className="text-[10px]" />
+                    </button>
+                  </TechBadge>
+                ))}
+                <input
+                  id="field-tech"
+                  type="text"
+                  list="tech-suggestions"
+                  autoComplete="off"
+                  value={techInput}
+                  placeholder={techStack.length ? "" : "React, Tailwind CSS, Node.js"}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    const native = e.nativeEvent as InputEvent;
+                    const picked =
+                      (!native.inputType || native.inputType === "insertReplacementText") &&
+                      suggestions.some((s) => s === v);
+                    if (v.includes(",") || picked) addTech(v);
+                    else setTechInput(v);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.metaKey && !e.ctrlKey) {
+                      e.preventDefault();
+                      addTech(techInput);
+                    } else if (e.key === "Backspace" && !techInput && techStack.length) {
+                      setTechStack((prev) => prev.slice(0, -1));
+                    }
+                  }}
+                  onBlur={() => addTech(techInput)}
+                  className="flex-1 min-w-[140px] h-6 px-1.5 bg-transparent outline-none text-sm placeholder:text-subtle"
+                />
+                <datalist id="tech-suggestions">
+                  {suggestions.map((s) => (
+                    <option key={s} value={s} />
+                  ))}
+                </datalist>
+              </div>
+            </Field>
+          </Section>
+        </div>
       </div>
 
-      {/* RIGHT */}
-      <div className="lg:col-span-4 space-y-6">
-        <section className="rounded-2xl border border-line bg-surface p-5 md:p-6 animate-fade-in">
-          <h2 className="font-semibold mb-1">Gambar Project</h2>
-          <p className="text-sm text-muted mb-4">Thumbnail yang tampil di kartu portfolio.</p>
-
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              pickFile(e.target.files?.[0]);
-              e.target.value = "";
-            }}
-          />
-
-          {preview ? (
-            <div className="group relative rounded-xl overflow-hidden border border-line aspect-[16/10] bg-surface-muted">
-              <ProjectImage src={preview} alt="Preview gambar project" className="w-full h-full" />
-              <div className="absolute inset-0 bg-slate-950/0 group-hover:bg-slate-950/40 transition flex items-end justify-end gap-2 p-2">
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  className="h-8 px-3 rounded-lg bg-white/90 text-slate-900 text-xs font-semibold flex items-center gap-1.5 hover:bg-white shadow"
-                >
-                  <FiImage /> Ganti
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setImage(null);
-                    setImageUrl(null);
-                  }}
-                  className="h-8 w-8 rounded-lg bg-white/90 text-rose-600 flex items-center justify-center hover:bg-white shadow"
-                  aria-label="Hapus gambar"
-                >
-                  <FiTrash2 />
-                </button>
-              </div>
-              {image && (
-                <span className="absolute top-2 left-2 max-w-[70%] truncate text-[11px] px-2 py-1 rounded-md bg-slate-950/60 text-white backdrop-blur-sm">
-                  {image.name}
-                </span>
-              )}
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              onDragOver={(e) => {
-                e.preventDefault();
-                setDragging(true);
+      {/* Aside */}
+      <aside className="space-y-4 lg:sticky lg:top-20 lg:row-span-2">
+        <section className={panel}>
+          <header className="flex items-center justify-between h-11 px-4 border-b border-line">
+            <h2 className="text-sm font-medium">Gambar</h2>
+            <span className="font-mono text-[11px] text-subtle">16:9 · maks 5 MB</span>
+          </header>
+          <div className="p-4">
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                pickFile(e.target.files?.[0]);
+                e.target.value = "";
               }}
-              onDragLeave={() => setDragging(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragging(false);
-                pickFile(e.dataTransfer.files?.[0]);
-              }}
-              className={`w-full aspect-[16/10] rounded-xl border-2 border-dashed flex flex-col items-center justify-center text-center p-6 transition ${
-                dragging
-                  ? "border-primary bg-primary-soft"
-                  : errors.image
-                    ? "border-danger/60 bg-danger-soft"
-                    : "border-line bg-surface-muted hover:border-primary/60 hover:bg-primary-soft"
-              }`}
-            >
-              <div className="w-12 h-12 rounded-full bg-surface text-primary flex items-center justify-center shadow-sm mb-3">
-                <FiUploadCloud className="text-xl" />
-              </div>
-              <p className="text-sm font-medium">
-                <span className="text-primary">Klik untuk upload</span> atau seret gambar ke sini
-              </p>
-              <p className="text-xs text-muted mt-1">PNG, JPG, WEBP, GIF atau SVG · maks. 5 MB</p>
-            </button>
-          )}
-          {errors.image && <p className="text-xs text-danger mt-2">{errors.image}</p>}
+            />
+
+            {preview ? (
+              <>
+                <div className="rounded-md overflow-hidden border border-line aspect-[16/9] bg-surface-muted">
+                  <ProjectImage src={preview} alt="Pratinjau gambar project" className="w-full h-full" />
+                </div>
+                {image && <p className="font-mono text-[11px] text-subtle mt-2 truncate">{image.name}</p>}
+                <div className="flex gap-2 mt-3">
+                  <button type="button" onClick={() => fileRef.current?.click()} className={button("secondary", "sm", "flex-1")}>
+                    <FiImage /> Ganti
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImage(null);
+                      setImageUrl(null);
+                    }}
+                    className={button("secondary", "sm", "hover:!text-danger")}
+                    aria-label="Hapus gambar"
+                    title="Hapus gambar"
+                  >
+                    <FiTrash2 />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragging(true);
+                }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragging(false);
+                  pickFile(e.dataTransfer.files?.[0]);
+                }}
+                className={`w-full aspect-[16/9] rounded-md border border-dashed flex flex-col items-center justify-center gap-1.5 text-center p-4 transition-colors ${
+                  dragging
+                    ? "border-accent bg-accent-soft text-foreground"
+                    : errors.image
+                      ? "border-danger/60 bg-danger-soft"
+                      : "border-line-strong text-muted hover:border-subtle hover:text-foreground"
+                }`}
+              >
+                <FiUploadCloud className="text-lg" />
+                <span className="text-[13px] font-medium">{dragging ? "Lepas untuk upload" : "Pilih atau seret gambar"}</span>
+                <span className="text-[11px] text-subtle">PNG, JPG, WEBP, GIF, SVG</span>
+              </button>
+            )}
+            {errors.image && <p className="text-xs text-danger mt-2">{errors.image}</p>}
+          </div>
         </section>
 
-        {/* Live preview */}
-        <section className="hidden lg:block rounded-2xl border border-line bg-surface p-5 md:p-6 animate-fade-in">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-3">Pratinjau Kartu</p>
-          <div className="rounded-xl border border-line overflow-hidden">
-            <ProjectImage src={preview} alt="" className="w-full aspect-[16/9]" />
+        {/* Card preview mirrors ProjectCard */}
+        <section className="hidden lg:block">
+          <p className="text-xs text-subtle mb-2">Pratinjau kartu</p>
+          <div className={`${panel} overflow-hidden`}>
+            <ProjectImage src={preview} alt="" className="w-full aspect-[16/9] border-b border-line text-xl" />
             <div className="p-3">
-              <p className="font-semibold text-sm line-clamp-1">{title || "Judul project"}</p>
+              <p className={`text-sm font-medium line-clamp-1 ${title ? "" : "text-subtle"}`}>{title || "Judul project"}</p>
               <p className="text-xs text-muted mt-1 line-clamp-2">{description || "Deskripsi singkat project."}</p>
               {techStack.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
                   {techStack.slice(0, 4).map((t) => (
                     <TechBadge key={t} name={t} />
                   ))}
+                  {techStack.length > 4 && (
+                    <span className="font-mono text-[11px] text-subtle self-center">+{techStack.length - 4}</span>
+                  )}
                 </div>
               )}
             </div>
           </div>
         </section>
 
-        {/* Actions: sticky bar on mobile, card on desktop */}
-        <section className="fixed lg:static inset-x-0 bottom-0 z-20 lg:z-auto border-t lg:border border-line bg-surface/95 lg:bg-surface backdrop-blur-md lg:backdrop-blur-none lg:rounded-2xl p-3 lg:p-6">
-          <div className="hidden lg:block mb-4">
-            <h2 className="font-semibold">{formType === "create" ? "Publikasikan" : "Simpan Perubahan"}</h2>
-            <p className="text-sm text-muted mt-0.5">
-              {formType === "create"
-                ? "Periksa kembali detail sebelum dipublikasikan ke portfolio."
-                : "Perubahan akan langsung tampil di portfolio."}
-            </p>
-          </div>
-          <div className="flex flex-row-reverse lg:flex-col gap-2 lg:gap-3 max-w-7xl mx-auto">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="flex-1 lg:flex-none h-11 rounded-xl bg-primary text-white dark:text-slate-950 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-primary-hover transition shadow-sm shadow-indigo-500/20 disabled:opacity-70"
-            >
-              {submitting ? <Spinner className="w-4 h-4" /> : <FiSave />}
-              {submitting ? "Menyimpan..." : formType === "create" ? "Buat Project" : "Simpan Perubahan"}
-            </button>
-            <Link
-              href="/project"
-              className="flex-1 lg:flex-none h-11 rounded-xl border border-line text-sm font-semibold flex items-center justify-center hover:bg-surface-muted transition"
-            >
+        {/* Actions: sticky bar on mobile, inline on desktop */}
+        <div className="fixed lg:static inset-x-0 bottom-0 z-20 border-t lg:border-0 border-line bg-background/95 lg:bg-transparent backdrop-blur lg:backdrop-blur-none px-4 py-3 lg:p-0">
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={cancel} className={button("secondary", "md", "flex-1 lg:flex-none")}>
               Batal
-            </Link>
+            </button>
+            <button type="submit" disabled={submitting || !canSubmit} className={button("primary", "md", "flex-1")}>
+              {submitting && <Spinner className="w-3.5 h-3.5" />}
+              {submitting ? "Menyimpan…" : formType === "create" ? "Buat project" : "Simpan"}
+              {!submitting && canSubmit && (
+                <span className="hidden lg:inline font-mono text-[11px] opacity-50">{isMac ? "⌘" : "Ctrl"}↵</span>
+              )}
+            </button>
           </div>
-        </section>
+          {formType === "edit" && (
+            <p className="hidden lg:flex items-center gap-1.5 text-xs text-subtle mt-2.5" aria-live="polite">
+              <span className={`w-1.5 h-1.5 rounded-full ${dirty ? "bg-accent" : "bg-line-strong"}`} />
+              {dirty ? "Ada perubahan yang belum disimpan" : "Tidak ada perubahan"}
+            </p>
+          )}
+        </div>
+      </aside>
 
-        {footer}
-      </div>
+      {footer && <div className="min-w-0 lg:col-start-1">{footer}</div>}
+
+      <ConfirmDialog
+        open={confirmLeave}
+        tone="default"
+        title="Buang perubahan?"
+        description="Perubahan yang belum disimpan akan hilang."
+        confirmLabel="Buang"
+        onConfirm={() => router.push("/project")}
+        onClose={() => setConfirmLeave(false)}
+      />
     </form>
   );
 }

@@ -2,35 +2,27 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import {
-  FiFolder,
-  FiGrid,
-  FiLogOut,
-  FiMoon,
-  FiPlusSquare,
-  FiSun,
-  FiTerminal,
-  FiX,
-} from "react-icons/fi";
+import { useEffect, useState } from "react";
+import { FiFolder, FiGrid, FiLogOut, FiMonitor, FiMoon, FiSun, FiX } from "react-icons/fi";
 import { logout } from "@/lib/api";
-import { useTheme } from "@/components/Providers";
+import { useTheme, type ThemePreference } from "@/components/Providers";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import BrandMark from "@/components/ui/BrandMark";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: FiGrid, match: (p: string) => p === "/" },
+  { href: "/", label: "Ringkasan", icon: FiGrid, match: (p: string) => p === "/" },
   {
     href: "/project",
     label: "Projects",
     icon: FiFolder,
-    match: (p: string) => p === "/project" || p.startsWith("/project/"),
+    match: (p: string) => p === "/project" || p.startsWith("/project/") || p === "/create-project",
   },
-  {
-    href: "/create-project",
-    label: "Tambah Project",
-    icon: FiPlusSquare,
-    match: (p: string) => p === "/create-project",
-  },
+];
+
+const themeOptions: { value: ThemePreference; label: string; icon: typeof FiSun }[] = [
+  { value: "light", label: "Terang", icon: FiSun },
+  { value: "dark", label: "Gelap", icon: FiMoon },
+  { value: "system", label: "Sistem", icon: FiMonitor },
 ];
 
 interface Props {
@@ -40,48 +32,48 @@ interface Props {
 
 export default function Sidebar({ open, onClose }: Props) {
   const pathname = usePathname() || "/";
-  const { theme, toggleTheme } = useTheme();
+  const { preference, setPreference } = useTheme();
   const [confirmLogout, setConfirmLogout] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
 
   return (
     <>
       {/* Mobile overlay */}
       <div
         onClick={onClose}
-        className={`fixed inset-0 bg-slate-950/50 backdrop-blur-[2px] z-[98] transition-opacity duration-300 lg:hidden ${
+        className={`fixed inset-0 bg-black/40 z-[98] transition-opacity duration-200 lg:hidden ${
           open ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
       />
 
       <aside
-        className={`fixed top-0 left-0 z-[99] h-dvh w-[272px] bg-surface border-r border-line flex flex-col transition-transform duration-300 ease-out lg:translate-x-0 ${
-          open ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+        className={`fixed top-0 left-0 z-[99] h-dvh w-60 bg-background border-r border-line flex flex-col transition-transform duration-200 ease-out lg:translate-x-0 ${
+          open ? "translate-x-0 shadow-pop" : "-translate-x-full"
         }`}
       >
-        {/* Brand */}
-        <div className="h-16 px-5 flex items-center justify-between border-b border-line">
-          <Link href="/" onClick={onClose} className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-lg shadow-indigo-500/25">
-              <FiTerminal className="text-lg" />
-            </div>
-            <div className="leading-tight">
-              <p className="font-semibold">YayanDev</p>
-              <p className="text-[11px] text-muted">Engineering Console</p>
-            </div>
+        <div className="h-14 px-4 flex items-center justify-between">
+          <Link href="/" onClick={onClose} className="flex items-center gap-2.5 rounded-md">
+            <BrandMark />
+            <span className="text-sm font-semibold">YayanDev</span>
+            <span className="font-mono text-[11px] text-subtle">console</span>
           </Link>
           <button
             onClick={onClose}
-            className="lg:hidden p-2 -mr-2 rounded-lg text-muted hover:bg-surface-muted"
+            className="lg:hidden w-8 h-8 -mr-1.5 rounded-md flex items-center justify-center text-muted hover:bg-surface-muted"
             aria-label="Tutup menu"
           >
-            <FiX className="text-lg" />
+            <FiX />
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-5">
-          <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted">Menu</p>
-          <ul className="space-y-1">
+        <nav className="flex-1 overflow-y-auto px-2 py-3">
+          <ul className="space-y-0.5">
             {navItems.map(({ href, label, icon: Icon, match }) => {
               const active = match(pathname);
               return (
@@ -90,14 +82,13 @@ export default function Sidebar({ open, onClose }: Props) {
                     href={href}
                     onClick={onClose}
                     aria-current={active ? "page" : undefined}
-                    className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                    className={`flex items-center gap-2.5 h-8 px-2.5 rounded-md text-sm transition-colors ${
                       active
-                        ? "bg-primary-soft text-primary font-semibold"
-                        : "text-muted hover:bg-surface-muted hover:text-foreground"
+                        ? "bg-surface-muted text-foreground font-medium"
+                        : "text-muted hover:bg-surface-muted/70 hover:text-foreground"
                     }`}
                   >
-                    {active && <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-primary" />}
-                    <Icon className="text-[18px] shrink-0" />
+                    <Icon className={`shrink-0 ${active ? "text-accent" : ""}`} />
                     {label}
                   </Link>
                 </li>
@@ -106,20 +97,32 @@ export default function Sidebar({ open, onClose }: Props) {
           </ul>
         </nav>
 
-        {/* Footer */}
-        <div className="p-3 border-t border-line space-y-1">
-          <button
-            onClick={toggleTheme}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted hover:bg-surface-muted hover:text-foreground transition-colors"
-          >
-            {theme === "dark" ? <FiSun className="text-[18px]" /> : <FiMoon className="text-[18px]" />}
-            {theme === "dark" ? "Mode Terang" : "Mode Gelap"}
-          </button>
+        <div className="p-2 border-t border-line space-y-1">
+          <div className="flex items-center justify-between h-9 px-2.5">
+            <span className="text-[13px] text-muted">Tema</span>
+            <div role="radiogroup" aria-label="Tema" className="flex rounded-md border border-line p-0.5 bg-surface">
+              {themeOptions.map(({ value, label, icon: Icon }) => (
+                <button
+                  key={value}
+                  role="radio"
+                  aria-checked={preference === value}
+                  aria-label={label}
+                  title={label}
+                  onClick={() => setPreference(value)}
+                  className={`w-6 h-6 rounded-[4px] flex items-center justify-center text-[13px] transition-colors ${
+                    preference === value ? "bg-surface-muted text-foreground" : "text-subtle hover:text-foreground"
+                  }`}
+                >
+                  <Icon />
+                </button>
+              ))}
+            </div>
+          </div>
           <button
             onClick={() => setConfirmLogout(true)}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-muted hover:bg-danger-soft hover:text-danger transition-colors"
+            className="w-full flex items-center gap-2.5 h-8 px-2.5 rounded-md text-sm text-muted hover:bg-surface-muted hover:text-foreground transition-colors"
           >
-            <FiLogOut className="text-[18px]" />
+            <FiLogOut className="shrink-0" />
             Keluar
           </button>
         </div>
@@ -127,8 +130,9 @@ export default function Sidebar({ open, onClose }: Props) {
 
       <ConfirmDialog
         open={confirmLogout}
-        title="Keluar dari akun?"
-        description="Kamu harus login kembali untuk mengakses dashboard."
+        tone="default"
+        title="Keluar dari console?"
+        description="Kamu perlu login lagi untuk mengelola project."
         confirmLabel="Keluar"
         onConfirm={logout}
         onClose={() => setConfirmLogout(false)}
