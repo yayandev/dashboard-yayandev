@@ -1,52 +1,23 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "../globals.css";
-import { ToastContainer } from "react-toastify";
-import NextTopLoader from "nextjs-toploader";
+"use client";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+import { Suspense, useState } from "react";
+import Sidebar from "@/components/dashboard/Sidebar";
+import Topbar from "@/components/dashboard/Topbar";
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-export const metadata: Metadata = {
-  title: "YayanDev",
-  description: "Engineering Console",
-};
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
   return (
-    <html
-      lang="id"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
-        <NextTopLoader
-          color="#2299DD"
-          initialPosition={0.08}
-          crawlSpeed={200}
-          height={3}
-          crawl={true}
-          showSpinner={true}
-          easing="ease"
-          speed={200}
-          shadow="0 0 10px #2299DD,0 0 5px #2299DD"
-          template='<div class="bar" role="bar"><div class="peg"></div></div> 
-  <div class="spinner" role="spinner"><div class="spinner-icon"></div></div>'
-          zIndex={1600}
-          showAtBottom={false}
-        />
-        <ToastContainer />
-        {children}
-      </body>
-    </html>
+    <div className="min-h-dvh">
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      <div className="lg:pl-[272px] min-h-dvh flex flex-col">
+        <Suspense fallback={<div className="h-16 border-b border-line bg-surface/80" />}>
+          <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
+        </Suspense>
+
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">{children}</main>
+      </div>
+    </div>
   );
 }

@@ -1,178 +1,167 @@
 "use client";
 
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-
-import Sidebar from "@/components/dashboard/Sidebar";
-import MobileSidebar from "@/components/dashboard/MobileSidebar";
-import Topbar from "@/components/dashboard/Topbar";
-import Cookies from "js-cookie";
-import FormProject from "@/components/FormProject";
-import { useParams } from "next/navigation";
 import { toast } from "react-toastify";
+import { FiAlertCircle, FiArrowLeft, FiChevronRight, FiTrash2 } from "react-icons/fi";
+import FormProject from "@/components/FormProject";
+import PageHeader from "@/components/ui/PageHeader";
+import EmptyState from "@/components/ui/EmptyState";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { deleteProject, fetchProject, formatDate, updateProject, type Project, type ProjectInput } from "@/lib/projects";
+import { getErrorMessage } from "@/lib/api";
 
 export default function EditProjectPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [githubUrl, setGithubUrl] = useState("");
-  const [demoUrl, setDemoUrl] = useState("");
-  const [techStack, setTechStack] = useState("");
-  const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const router = useRouter();
+  const { id } = useParams<{ id: string }>();
 
-  const [loading, setLoading] = useState(false);
-  const [loadingFetch, setLoadingFetch] = useState(false);
-
-  const params = useParams();
-
-  const { id } = params;
+  const [project, setProject] = useState<Project | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    const fetchProject = async () => {
-      setLoadingFetch(true);
-      try {
-        const res = await fetch(
-          `https://api-yayandev.vercel.app/api/portfolio/${id}`
-        );
-
-        const result = await res.json();
-        if (!res.ok) {
-          throw new Error(result.error || "Failed to fetch project");
-        }
-
-        const { data, message, status, status_code } = result;
-
-        if (status_code !== 200) {
-          throw new Error(message || "Failed to fetch project");
-        }
-
-        setTitle(data.title);
-        setDescription(data.description);
-        setGithubUrl(data.github_url);
-        setDemoUrl(data.demo_url);
-        setTechStack(data.tech_stack);
-        setImagePreview(data.image_url);
-      } catch (err: any) {
-        alert(err.message);
-      } finally {
-        setLoadingFetch(false);
-      }
+    let cancelled = false;
+    fetchProject(id)
+      .then((data) => !cancelled && setProject(data))
+      .catch((err) => !cancelled && setError(getErrorMessage(err, "Project tidak ditemukan")));
+    return () => {
+      cancelled = true;
     };
-
-    if (id) {
-      fetchProject();
-    }
   }, [id]);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
+  const handleSubmit = async (values: ProjectInput) => {
     try {
-      setLoading(true);
+      await updateProject(id, values);
+      toast.success("Perubahan berhasil disimpan");
+      router.push("/project");
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Gagal menyimpan perubahan"));
+    }
+  };
 
-      const token = Cookies.get("token");
-
-      const formData = new FormData();
-
-      formData.append("title", title);
-      formData.append("description", description);
-      formData.append("github_url", githubUrl);
-      formData.append("demo_url", demoUrl);
-      formData.append("tech_stack", techStack);
-
-      if (image) {
-        formData.append("image", image);
-      } else {
-        formData.append("image_url", imagePreview || "");
-      }
-
-      const res = await fetch(
-        `https://api-yayandev.vercel.app/api/portfolio/${id}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        }
-      );
-
-      const result = await res.json();
-      if (!res.ok) {
-        throw new Error(result.error || "Failed to update project");
-      }
-
-      const { message, status_code } = result;
-
-      if (status_code !== 200) {
-        throw new Error(message || "Failed to update project");
-      }
-
-      toast.success("Project updated successfully", {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: false,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-    } catch (err: any) {
-      toast.error(err.message, {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: false,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-    } finally {
-      setLoading(false);
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await deleteProject(id);
+      toast.success("Project berhasil dihapus");
+      router.push("/project");
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Gagal menghapus project"));
+      setDeleting(false);
     }
   };
 
   return (
-    <main className="bg-[#f3f3f3] text-[#1a1c1c] min-h-screen overflow-x-hidden">
-      {/* Desktop Sidebar */}
-      <Sidebar />
+    <>
+      <nav className="flex items-center gap-1 text-sm text-muted mb-3" aria-label="Breadcrumb">
+        <Link href="/project" className="hover:text-foreground">
+          Projects
+        </Link>
+        <FiChevronRight />
+        <span className="text-foreground truncate">{project?.title ?? "Edit"}</span>
+      </nav>
 
-      {/* Mobile Sidebar */}
-      <MobileSidebar open={sidebarOpen} setOpen={setSidebarOpen} />
+      <PageHeader
+        title="Edit Project"
+        description={
+          project?.created_at
+            ? `Ditambahkan pada ${formatDate(project.created_at, "long")}`
+            : "Perbarui detail project dan simpan perubahan."
+        }
+      />
 
-      {/* Main Content */}
-      <div className="lg:ml-[280px]">
-        <Topbar setOpenSidebar={setSidebarOpen} />
+      {error ? (
+        <div className="rounded-2xl border border-line bg-surface">
+          <EmptyState
+            tone="danger"
+            icon={<FiAlertCircle />}
+            title="Project tidak dapat dimuat"
+            description={error}
+            action={
+              <Link
+                href="/project"
+                className="h-10 px-4 rounded-xl border border-line text-sm font-medium inline-flex items-center gap-2 hover:bg-surface-muted"
+              >
+                <FiArrowLeft /> Kembali ke Projects
+              </Link>
+            }
+          />
+        </div>
+      ) : !project ? (
+        <FormSkeleton />
+      ) : (
+        <FormProject
+          formType="edit"
+          initialValues={{
+            title: project.title,
+            description: project.description,
+            githubUrl: project.github_url ?? "",
+            demoUrl: project.demo_url ?? "",
+            techStack: project.tech_stack,
+            imageUrl: project.image_url ?? null,
+          }}
+          onSubmit={handleSubmit}
+          footer={
+            <section className="rounded-2xl border border-danger/30 bg-surface p-5 md:p-6">
+              <h2 className="font-semibold text-danger">Zona Berbahaya</h2>
+              <p className="text-sm text-muted mt-0.5 mb-4">Menghapus project bersifat permanen.</p>
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                className="w-full h-10 rounded-xl border border-danger/40 text-danger text-sm font-semibold flex items-center justify-center gap-2 hover:bg-danger-soft transition"
+              >
+                <FiTrash2 /> Hapus Project
+              </button>
+            </section>
+          }
+        />
+      )}
 
-        <div className="pt-24 p-4 md:p-6 mt-12">
-          {loadingFetch ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-gray-800"></div>
-            </div>
-          ) : (
-            <FormProject
-              demoUrl={demoUrl}
-              description={description}
-              githubUrl={githubUrl}
-              image={image}
-              imagePreview={imagePreview}
-              loading={loading}
-              setDemoUrl={setDemoUrl}
-              setDescription={setDescription}
-              setGithubUrl={setGithubUrl}
-              setImage={setImage}
-              setTechStack={setTechStack}
-              setTitle={setTitle}
-              techStack={techStack}
-              title={title}
-              handleSubmit={handleSubmit}
-              formType="edit"
-            />
-          )}
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Hapus project?"
+        description={
+          <>
+            Project <span className="font-semibold text-foreground">&ldquo;{project?.title}&rdquo;</span> akan dihapus
+            permanen dan tidak bisa dikembalikan.
+          </>
+        }
+        loading={deleting}
+        onConfirm={handleDelete}
+        onClose={() => setConfirmDelete(false)}
+      />
+    </>
+  );
+}
+
+function FormSkeleton() {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="lg:col-span-8 space-y-6">
+        {[3, 3].map((rows, i) => (
+          <div key={i} className="rounded-2xl border border-line bg-surface p-6 space-y-5">
+            <div className="h-4 w-40 rounded bg-surface-muted animate-pulse" />
+            {Array.from({ length: rows }).map((_, j) => (
+              <div key={j} className="space-y-2">
+                <div className="h-3 w-24 rounded bg-surface-muted animate-pulse" />
+                <div className="h-11 rounded-xl bg-surface-muted animate-pulse" />
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="lg:col-span-4 space-y-6">
+        <div className="rounded-2xl border border-line bg-surface p-6 space-y-4">
+          <div className="h-4 w-32 rounded bg-surface-muted animate-pulse" />
+          <div className="aspect-[16/10] rounded-xl bg-surface-muted animate-pulse" />
+        </div>
+        <div className="rounded-2xl border border-line bg-surface p-6 space-y-3">
+          <div className="h-11 rounded-xl bg-surface-muted animate-pulse" />
+          <div className="h-11 rounded-xl bg-surface-muted animate-pulse" />
         </div>
       </div>
-    </main>
+    </div>
   );
 }

@@ -1,16 +1,21 @@
 import { NextResponse } from "next/server";
 
+const LOGIN_PATH = "/auth/login";
+
 export function proxy(request) {
   const token = request.cookies.get("token")?.value;
-  const pathname = request.nextUrl.pathname;
+  const { pathname, search } = request.nextUrl;
+  const isAuthPage = pathname.startsWith("/auth");
 
-  // kalau belum login dan akses homepage
-  if (!token && pathname === "/") {
-    return NextResponse.redirect(new URL("/auth/login", request.url));
+  // belum login dan membuka halaman dashboard
+  if (!token && !isAuthPage) {
+    const url = new URL(LOGIN_PATH, request.url);
+    if (pathname !== "/") url.searchParams.set("next", pathname + search);
+    return NextResponse.redirect(url);
   }
 
-  // kalau sudah login tapi buka login lagi
-  if (token && pathname === "/auth/login") {
+  // sudah login tapi membuka halaman login lagi
+  if (token && isAuthPage) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
@@ -18,5 +23,6 @@ export function proxy(request) {
 }
 
 export const config = {
-  matcher: ["/", "/auth/login"],
+  // semua halaman kecuali asset statis & file internal Next.js
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)"],
 };

@@ -1,54 +1,105 @@
 "use client";
 
 import Link from "next/link";
-import { FiBell, FiMenu, FiPlus, FiSearch, FiSettings } from "react-icons/fi";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { FiMenu, FiMoon, FiPlus, FiSearch, FiSun, FiX } from "react-icons/fi";
+import { useTheme } from "@/components/Providers";
 
 interface Props {
-  setOpenSidebar: (value: boolean) => void;
+  onOpenSidebar: () => void;
 }
 
-export default function Topbar({ setOpenSidebar }: Props) {
+export default function Topbar({ onOpenSidebar }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { theme, toggleTheme } = useTheme();
+
+  const q = searchParams.get("q") ?? "";
+  const [value, setValue] = useState(q);
+  const [prevQ, setPrevQ] = useState(q);
+
+  // Keep the input in sync when the query is changed elsewhere (e.g. "clear" button).
+  if (q !== prevQ) {
+    setPrevQ(q);
+    setValue(q);
+  }
+
+  const onProjectList = pathname === "/project";
+
+  const applySearch = (text: string, replace: boolean) => {
+    const params = new URLSearchParams(onProjectList ? searchParams.toString() : "");
+    if (text.trim()) params.set("q", text.trim());
+    else params.delete("q");
+    const url = `/project${params.toString() ? `?${params}` : ""}`;
+    if (replace) router.replace(url, { scroll: false });
+    else router.push(url);
+  };
+
   return (
-    <header className="fixed top-0 right-0 left-0 lg:left-[280px] h-16 bg-white/95 backdrop-blur-sm border-b border-[#e2e2e2] z-30 px-4 md:px-6 flex items-center justify-between">
-      {/* Left */}
-      <div className="flex items-center gap-3 w-full max-w-md">
-        {/* Hamburger */}
+    <header className="sticky top-0 z-30 h-16 bg-surface/80 backdrop-blur-md border-b border-line px-4 md:px-6 flex items-center gap-3">
+      <button
+        onClick={onOpenSidebar}
+        className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-surface-muted"
+        aria-label="Buka menu"
+      >
+        <FiMenu className="text-xl" />
+      </button>
+
+      <form
+        role="search"
+        className="relative flex-1 max-w-md"
+        onSubmit={(e) => {
+          e.preventDefault();
+          applySearch(value, onProjectList);
+        }}
+      >
+        <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
+        <input
+          type="search"
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value);
+            // Filter live when already on the project list.
+            if (onProjectList) applySearch(e.target.value, true);
+          }}
+          placeholder="Cari project atau teknologi..."
+          aria-label="Cari project"
+          className="w-full h-10 pl-10 pr-9 bg-surface-muted border border-transparent rounded-xl text-sm outline-none placeholder:text-muted focus:bg-surface focus:border-primary focus:ring-4 focus:ring-primary/15 transition [&::-webkit-search-cancel-button]:hidden"
+        />
+        {value && (
+          <button
+            type="button"
+            onClick={() => {
+              setValue("");
+              if (onProjectList) applySearch("", true);
+            }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted hover:text-foreground"
+            aria-label="Hapus pencarian"
+          >
+            <FiX />
+          </button>
+        )}
+      </form>
+
+      <div className="ml-auto flex items-center gap-2">
         <button
-          onClick={() => setOpenSidebar(true)}
-          className="lg:hidden flex items-center justify-center cursor-pointer"
+          onClick={toggleTheme}
+          className="hidden sm:flex w-10 h-10 items-center justify-center rounded-xl text-muted hover:bg-surface-muted hover:text-foreground transition"
+          aria-label="Ganti tema"
+          title={theme === "dark" ? "Mode terang" : "Mode gelap"}
         >
-          <FiMenu className="text-2xl" />
+          {theme === "dark" ? <FiSun className="text-lg" /> : <FiMoon className="text-lg" />}
         </button>
-        {/* Search */}
-        <div className="relative w-full">
-          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[#4c4546]" />
-
-          <input
-            type="text"
-            placeholder="Search projects, tags, or IDs..."
-            className="w-full pl-10 pr-4 py-2 bg-[#f3f3f3] border border-[#e2e2e2] rounded-lg text-sm outline-none focus:border-black focus:ring-1 focus:ring-black transition-all"
-          />
-        </div>
-      </div>
-
-      {/* Right */}
-      <div className="hidden md:flex items-center gap-4 ml-4">
-        <div className="flex items-center gap-2 pr-4 border-r border-[#e2e2e2]">
-          <button className="p-2 rounded-full hover:bg-[#eeeeee] transition">
-            <FiBell />
-          </button>
-
-          <button className="p-2 rounded-full hover:bg-[#eeeeee] transition">
-            <FiSettings />
-          </button>
-        </div>
 
         <Link
-          href={"/create-project"}
-          className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition flex items-center gap-2"
+          href="/create-project"
+          className="h-10 w-10 sm:w-auto sm:px-4 bg-primary text-white dark:text-slate-950 rounded-xl text-sm font-semibold hover:bg-primary-hover transition flex items-center justify-center gap-2 shadow-sm shadow-indigo-500/20"
+          aria-label="Tambah project"
         >
-          <FiPlus />
-          Add New Project
+          <FiPlus className="text-lg" />
+          <span className="hidden sm:inline">Tambah Project</span>
         </Link>
       </div>
     </header>
